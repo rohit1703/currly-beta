@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { ThemeProvider } from '@/components/ThemeProvider'; // <--- CHECK THIS IMPORT
+import { ThemeProvider } from '@/components/ThemeProvider';
+import MobileNav from '@/components/MobileNav'; // <--- IMPORT THIS
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,7 +19,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        {/* CHECK THIS WRAPPER */}
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -26,6 +26,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <MobileNav /> {/* <--- ADD THIS HERE */}
         </ThemeProvider>
       </body>
     </html>
