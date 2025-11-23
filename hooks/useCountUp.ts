@@ -1,4 +1,5 @@
-import { useSpring, useTransform, useEffect } from "framer-motion";
+import { useSpring, useTransform } from "framer-motion";
+import { useEffect } from "react"; // <--- MOVED THIS TO REACT
 
 export function useCountUp(value: number, duration: number = 2) {
   const spring = useSpring(0, { duration: duration * 1000, bounce: 0 });
