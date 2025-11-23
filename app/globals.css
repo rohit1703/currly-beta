@@ -4,43 +4,34 @@
 
 @layer base {
   :root {
-    /* LIGHT MODE: High-End Editorial Look */
-    --background: #FDFBF7; 
-    --foreground: #1A1A1A;
-    --border: #E5E5E5;
-    --input: #FFFFFF;
-    --ring: #0066FF;
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    /* ... other standard vars ... */
   }
-
   .dark {
-    /* DARK MODE: Futuristic SaaS Look */
-    --background: #050505;
-    --foreground: #FFFFFF;
-    --border: #262626;
-    --input: #1A1A1A;
-    --ring: #0066FF;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    /* ... other standard vars ... */
   }
-  
-  html {
-    scroll-behavior: smooth;
-    -webkit-font-smoothing: antialiased; /* Crisper text */
+}
+
+@layer base {
+  * {
+    @apply border-border;
   }
-  
   body {
-    @apply bg-[var(--background)] text-[var(--foreground)] transition-colors duration-500 ease-in-out;
+    @apply bg-background text-foreground;
   }
 }
 
-/* Hide Scrollbar but keep functionality */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+/* Ensure these animations are present */
+.animate-scroll {
+  animation: scroll-left 40s linear infinite;
 }
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.animate-scroll:hover {
+  animation-play-state: paused;
 }
-
-/* Premium Text Glow */
-.text-glow {
-  text-shadow: 0 0 30px rgba(0, 102, 255, 0.3);
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
