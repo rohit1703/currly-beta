@@ -36,7 +36,13 @@ export default function Home() {
     if (query.trim()) router.push(`/dashboard?q=${encodeURIComponent(query)}`);
   };
 
-  // V5 CONTENT RESTORED
+  // V5 CONTENT
+  const stats = [
+    { label: "Curated Tools", value: 1102 },
+    { label: "Active Members", value: 420 },
+    { label: "Categories", value: 15 },
+  ];
+
   const testimonials = [
     { 
       quote: "Saved me 10 hours of research. Currly's AI gave me 3 perfect options in seconds.", 
@@ -113,42 +119,4 @@ export default function Home() {
         </h1>
 
         <p className="relative text-xl text-gray-500 dark:text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-          500+ tools curated by experts. Powered by AI. <br/> Validated by 350+ professionals.
-        </p>
-
-        {/* SEARCH */}
-        <div className="relative max-w-3xl mx-auto mb-24 z-10">
-          <form onSubmit={handleSearch} className="relative group">
-            <div className="relative flex items-center gap-4 bg-white dark:bg-[#111] rounded-2xl p-3 shadow-2xl border border-gray-200 dark:border-white/10 transition-transform hover:scale-[1.01]">
-              <Search className="w-6 h-6 text-gray-400 ml-3" />
-              <input 
-                type="text" 
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Try: 'Best AI writing tool for content creators'"
-                className="flex-1 text-lg bg-transparent border-none focus:ring-0 outline-none h-12 text-gray-900 dark:text-white placeholder-gray-400"
-              />
-              <button type="submit" className="bg-[#0066FF] text-white px-8 py-4 rounded-xl font-bold transition-all hover:bg-blue-600 flex items-center gap-2">
-                Search <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* ANIMATED STATS */}
-        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 z-10">
-           <StatItem value={500} label="AI Tools Curated" />
-           <StatItem value={350} label="Community Members" />
-           <StatItem value={15} label="Tool Categories" />
-        </div>
-      </div>
-
-      {/* --- FEATURES / WHY US (Restored) --- */}
-      <div className="py-24 bg-white dark:bg-[#050505]">
-        <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">Why professionals trust Currly.</h2>
-                <p className="text-gray-500 dark:text-gray-400 text-lg">We fixed tool discovery by adding the one thing missing: <span className="text-[#0066FF] font-bold">Truth.</span></p>
-            </div>
-
-            <div className
+          500+ tools curated by experts. Powered by AI. <br/> Validated
