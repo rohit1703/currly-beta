@@ -24,6 +24,6 @@ export async function POST(req: Request) {
     prompt: prompt,
   });
 
-  // CHANGED: New method for returning the stream
-  return result.toDataStreamResponse();
+  // FIX: Use the method available in your current SDK version
+  return result.toTextStreamResponse();
 }
