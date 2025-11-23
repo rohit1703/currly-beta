@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Plus_Jakarta_Sans } from 'next/font/google'; // CHANGED FONT
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import MobileNav from '@/components/MobileNav'; // <--- IMPORT THIS
+import MobileNav from '@/components/MobileNav';
 
-const inter = Inter({ subsets: ['latin'] });
+const font = Plus_Jakarta_Sans({ subsets: ['latin'] }); // CHANGED FONT
 
 export const metadata: Metadata = {
   title: 'Currly - AI Discovery Engine',
@@ -18,15 +18,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={font.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light" // Default to Light to match "Apple" vibe
           enableSystem
           disableTransitionOnChange
         >
           {children}
-          <MobileNav /> {/* <--- ADD THIS HERE */}
+          <MobileNav />
         </ThemeProvider>
       </body>
     </html>
