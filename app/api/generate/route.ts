@@ -1,18 +1,13 @@
-import { OpenAIStream, StreamingTextResponse } from 'ai';
-import OpenAI from 'openai';
+import { openai } from '@ai-sdk/openai';
+import { streamText } from 'ai';
 
-// Create an OpenAI API client (that's edge friendly!)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
+// Set the runtime to edge for best performance
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
   const { prompt, context } = await req.json();
 
   // The "Context" is the list of tools we found in Supabase.
-  // We feed this to the AI so it doesn't hallucinate.
   const systemPrompt = `
     You are Currly, an expert software advisor. 
     The user is searching for tools. 
@@ -26,15 +21,11 @@ export async function POST(req: Request) {
     5. If no tools match, suggest what they might search for instead.
   `;
 
-  const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    stream: true,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: prompt },
-    ],
+  const result = await streamText({
+    model: openai('gpt-4o-mini'),
+    system: systemPrompt,
+    prompt: prompt,
   });
 
-  const stream = OpenAIStream(response);
-  return new StreamingTextResponse(stream);
+  return result.toDataStreamResponse();
 }

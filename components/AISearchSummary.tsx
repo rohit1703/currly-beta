@@ -12,7 +12,7 @@ export default function AISearchSummary({ query, tools }: { query: string, tools
   // Trigger the AI whenever the search query or results change
   useEffect(() => {
     if (query && tools.length > 0) {
-      complete(query, { body: { context: tools.slice(0, 5) } }); // We send top 5 tools as context
+      complete(query, { body: { context: tools.slice(0, 5) } }); 
     }
   }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
