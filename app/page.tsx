@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Search, Sparkles, Users, ArrowRight, Shield, Brain, Zap, Star, Database } from 'lucide-react';
+import { Search, Sparkles, Users, ArrowRight, Shield, Brain, Zap, Star } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useCountUp } from '@/hooks/useCountUp';
+import UserNav from '@/components/UserNav'; // IMPORTED
 
 // Animated Number Component
 function StatItem({ value, label, suffix = "+" }: { value: number, label: string, suffix?: string }) {
@@ -93,13 +94,16 @@ export default function Home() {
       <nav className="fixed top-0 w-full z-50 px-6 py-4 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-100 dark:border-white/10">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center text-white dark:text-black font-bold text-lg">C</div>
-            <span className="text-xl font-bold tracking-tight">currly</span>
+            <div className="w-9 h-9 bg-[#0066FF] rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-[0_0_20px_rgba(0,102,255,0.3)] group-hover:scale-110 transition-transform">C</div>
+            <span className="text-xl font-bold tracking-tight text-[#1A1A1A] dark:text-white">currly</span>
           </Link>
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Link href="/login" className="text-sm font-medium hover:opacity-70 hidden sm:block">Login</Link>
-            <Link href="/dashboard" className="bg-black dark:bg-white text-white dark:text-black px-5 py-2 rounded-full text-sm font-bold hover:opacity-80 transition-all">Sign up</Link>
+            {/* REPLACED LOGIN LINK WITH USERNAV */}
+            <UserNav />
+            <Link href="/dashboard" className="bg-[#0066FF] hover:bg-[#0052CC] text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg shadow-blue-500/20">
+              Join Beta
+            </Link>
           </div>
         </div>
       </nav>

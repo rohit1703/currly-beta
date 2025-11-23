@@ -8,6 +8,7 @@ import AISearchSummary from '@/components/AISearchSummary';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import UserNav from '@/components/UserNav'; // IMPORTED
 
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -45,28 +46,15 @@ function DashboardContent() {
     return name.includes(query) || desc.includes(query);
   });
 
-  // --- IMPROVED LOGO LOGIC ---
   const getLogo = (tool: any) => {
-    // 1. Trust DB if available
     if (tool.logo_url) return tool.logo_url;
-    
-    // 2. Smart Fetch from Website
     if (tool.website_url) {
-      try {
-        // Ensure URL has protocol, otherwise new URL() crashes
-        let url = tool.website_url;
-        if (!url.startsWith('http')) {
-            url = `https://${url}`;
-        }
-        const domain = new URL(url).hostname;
-        return `https://logo.clearbit.com/${domain}`;
-      } catch (e) { return null; }
+      try { return `https://logo.clearbit.com/${new URL(tool.website_url).hostname}`; } catch (e) { return null; }
     }
     return null;
   };
 
   return (
-    // FORCE CREAM BACKGROUND
     <div className="flex h-screen bg-[#FDFBF7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans transition-colors duration-500">
       
       {/* --- SIDEBAR --- */}
@@ -112,12 +100,14 @@ function DashboardContent() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-4">
+             <ThemeToggle />
+             {/* REPLACED LOGIN LINK WITH USERNAV */}
+             <UserNav />
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-10 scroll-smooth">
-          
-          {/* AI SUMMARY */}
           {!loading && searchQuery && (
              <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
                <AISearchSummary query={searchQuery} tools={filteredTools} />
@@ -135,9 +125,7 @@ function DashboardContent() {
                 const logo = getLogo(tool);
                 return (
                   <div key={tool.id} className="group bg-white dark:bg-[#111] border border-gray-100 dark:border-white/5 rounded-[2rem] p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col">
-                    
                     <div className="flex justify-between items-start mb-6">
-                      {/* LOGO AREA */}
                       <div className="w-16 h-16 bg-[#FDFBF7] dark:bg-black rounded-2xl p-2 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-inner overflow-hidden">
                         {logo ? (
                           <img src={logo} alt={tool.name} className="w-full h-full object-contain rounded-lg" onError={(e) => {e.currentTarget.style.display='none'}} />
@@ -149,22 +137,18 @@ function DashboardContent() {
                         {tool.pricing_type === 'free' ? 'FREE' : 'PAID'}
                       </span>
                     </div>
-
                     <h3 className="font-bold text-xl mb-2 text-[#1A1A1A] dark:text-white">{tool.name}</h3>
                     <div className="flex items-center gap-4 text-xs text-gray-500 font-medium mb-4">
                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {tool.setup_time_minutes || 15}m setup</span>
                        {tool.is_india_based && <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded"><MapPin className="w-3 h-3" /> India</span>}
                     </div>
-
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 line-clamp-2 leading-relaxed flex-grow">
                       {tool.description || "AI-powered tool for efficiency and automation."}
                     </p>
-
                     <div className="grid grid-cols-2 gap-3 mt-auto">
                       <button className="bg-white dark:bg-black hover:bg-gray-50 border border-gray-200 dark:border-white/20 text-xs font-bold py-3 rounded-xl transition-colors text-[#1A1A1A] dark:text-white">
                         Compare
                       </button>
-                      {/* FORCE BLUE BUTTON */}
                       <button 
                         onClick={() => { setSelectedTool(tool); setIsAdoptionOpen(true); }}
                         className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-500/20"
