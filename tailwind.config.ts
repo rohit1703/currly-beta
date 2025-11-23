@@ -10,39 +10,32 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // V5 Signature Palette
+        // The Official V5 Palette (Currly Premium)
         cream: '#FDFBF7',
         charcoal: '#1A1A1A',
         primary: {
           DEFAULT: '#0066FF', // Electric Blue
-          dark: '#0052CC',
+          hover: '#0052CC',
           light: '#3385FF',
         },
-        accent: '#FFB800', // Gold/Yellow from stars
+        accent: '#FFB800',
         
-        // System Mappings (For Dark Mode Logic)
+        // System Mappings
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
-      fontFamily: {
-        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-      },
       animation: {
-        'scroll': 'scroll-left 40s linear infinite', // Slower = More Premium
-        'float': 'float 6s ease-in-out infinite',
+        // Slower, smoother scroll
+        'scroll': 'scroll 40s linear infinite',
         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
-        'scroll-left': {
+        scroll: {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
-        },
-        'float': {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-20px)' },
         }
       }
     },
