@@ -6,11 +6,10 @@ import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Search, Sparkles, Users, ArrowRight, Shield, Brain, Zap, Star, Globe, LayoutGrid, Code, PenTool } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Logo } from '@/components/Logo'; // IMPORT NEW LOGO
+import { Logo } from '@/components/Logo';
 import { useCountUp } from '@/hooks/useCountUp';
 import UserNav from '@/components/UserNav';
 
-// Animated Number Component
 function StatItem({ value, label, suffix = "+" }: { value: number, label: string, suffix?: string }) {
   const count = useCountUp(value);
   return (
@@ -44,7 +43,6 @@ export default function Home() {
     if (query.trim()) router.push(`/dashboard?q=${encodeURIComponent(query)}`);
   };
 
-  // DISCOVERY CATEGORIES (For "Discovery Mode")
   const categories = [
     { name: "Marketing & SEO", icon: Zap, tools: "120+", slug: "marketing" },
     { name: "Development", icon: Code, tools: "85+", slug: "coding" },
@@ -73,17 +71,18 @@ export default function Home() {
 
       {/* --- HERO SECTION --- */}
       <div className="pt-40 pb-20 px-4 text-center max-w-7xl mx-auto relative">
-        {/* Background Blobs */}
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-500/5 dark:bg-white/5 rounded-full blur-[120px] pointer-events-none" />
 
+        {/* BADGE UPDATE */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-white/10 rounded-full mb-8 border border-blue-100 dark:border-white/10">
           <Globe className="w-4 h-4 text-[#0066FF] dark:text-white" />
-          <span className="text-xs font-bold uppercase tracking-wide text-[#0066FF] dark:text-white">The World's First AI Tools Engine</span>
+          <span className="text-xs font-bold uppercase tracking-wide text-[#0066FF] dark:text-white">The World's First AI Tools Search Engine</span>
         </motion.div>
 
+        {/* HEADLINE UPDATE */}
         <h1 className="relative text-5xl md:text-7xl lg:text-8xl font-extrabold mb-8 leading-[1.1] tracking-tighter text-gray-900 dark:text-white">
-          The World's First <br/>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0066FF] to-cyan-500">AI Discovery Engine</span>
+          Discover the Perfect <br/>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0066FF] to-cyan-500">AI Tool in Seconds</span>
         </h1>
 
         <p className="relative text-xl text-gray-500 dark:text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
@@ -119,7 +118,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* DISCOVERY MODE PREVIEW (New Feature) */}
+        {/* DISCOVERY PREVIEW */}
         <div className="relative z-10 mb-24">
            <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-8">Explore by Category</p>
            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -135,7 +134,7 @@ export default function Home() {
            </div>
         </div>
 
-        {/* ANIMATED STATS */}
+        {/* STATS */}
         <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 z-10">
            <StatItem value={712} label="AI Tools Curated" />
            <StatItem value={420} label="Active Members" />
