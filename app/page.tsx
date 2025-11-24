@@ -1,6 +1,20 @@
 import { createClient } from '@/utils/supabase/server'; // or your existing supabase client path
 import { cookies } from 'next/headers';
-import ToolCard from '@/components/ToolCard'; // Ensure this path is correct
+import ToolCard from '@/components/ToolCard';// app/page.tsx
+
+// 1. Change this import to point to the SERVER utility
+import { createClient } from '@/utils/supabase/server'; 
+
+import { cookies } from 'next/headers';
+
+// 2. Fix the ToolCard import (See Step 3 below)
+import ToolCard from '@/components/ToolCard'; // We will verify this path next
+
+export default async function Home() {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore); 
+  
+  // ... rest of your code
 
 export default async function Home() {
   // 1. Initialize Supabase Client
