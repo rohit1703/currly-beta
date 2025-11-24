@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowUp, MessageCircle, Share2, Rocket, Layers, Zap, Plus } from 'lucide-react';
+import { ArrowUp, MessageCircle, Share2, Rocket, Layers, Zap, Plus, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/utils/supabase';
 import StackBuilder from '@/components/StackBuilder';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import UserNav from '@/components/UserNav'; // IMPORTED
+import UserNav from '@/components/UserNav';
+import { Logo } from '@/components/Logo'; // IMPORTED NEW LOGO
 
 export default function FeedPage() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -25,26 +26,29 @@ export default function FeedPage() {
   const filteredPosts = activeTab === 'pulse' ? posts : posts.filter(p => p.type === (activeTab === 'launches' ? 'launch' : 'stack'));
 
   return (
+    // THEME UPDATE: Force Cream/Dark background
     <div className="min-h-screen bg-[#FDFBF7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans flex flex-col items-center transition-colors duration-500">
       
       {/* HEADER NAVIGATION */}
       <nav className="w-full border-b border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur p-4 flex justify-between items-center sticky top-0 z-20">
          <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2 group">
-                <div className="w-9 h-9 bg-[#0066FF] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-105 transition-transform">C</div>
-                <span className="font-bold tracking-tight text-xl">currly</span>
+            <Link href="/">
+                {/* UPDATED: Using Master Logo */}
+                <Logo />
+            </Link>
+            <Link href="/dashboard" className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-[#0066FF] transition-colors">
+               <LayoutGrid className="w-4 h-4" /> Discovery
             </Link>
          </div>
 
          <div className="flex items-center gap-4">
             <ThemeToggle />
-            {/* REPLACED LOGIN WITH USERNAV */}
             <UserNav />
             <button 
-            onClick={() => setIsStackBuilderOpen(true)}
-            className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-bold px-4 py-2 rounded-full flex items-center gap-2 transition-colors shadow-md"
+              onClick={() => setIsStackBuilderOpen(true)}
+              className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-bold px-4 py-2 rounded-full flex items-center gap-2 transition-colors shadow-lg shadow-blue-500/20"
             >
-            <Plus className="w-4 h-4" /> Create Stack
+              <Plus className="w-4 h-4" /> Create Stack
             </button>
          </div>
       </nav>
@@ -74,7 +78,7 @@ export default function FeedPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/5 rounded-2xl overflow-hidden hover:border-[#0066FF]/30 transition-colors shadow-sm hover:shadow-md"
+              className="bg-white dark:bg-[#111] border border-gray-100 dark:border-white/5 rounded-2xl overflow-hidden hover:border-[#0066FF]/30 transition-colors shadow-sm hover:shadow-md"
             >
               {item.type === 'launch' && (
                 <div className="relative h-48 bg-gray-50 dark:bg-white/5 border-b border-gray-100 dark:border-white/5 flex items-center justify-center">
@@ -85,7 +89,7 @@ export default function FeedPage() {
 
               <div className="p-6">
                 <div className="flex items-center gap-3 mb-3">
-                   <img src={item.author_avatar || 'https://i.pravatar.cc/150'} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/10" />
+                   <img src={item.author_avatar || 'https://i.pravatar.cc/150'} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/10" alt={item.author_name} />
                    <div>
                      <h3 className="font-bold text-[#1A1A1A] dark:text-white leading-tight text-lg">{item.title}</h3>
                      <p className="text-xs text-gray-500">by {item.author_name} • {new Date(item.created_at).toLocaleDateString()}</p>
@@ -95,8 +99,8 @@ export default function FeedPage() {
 
                 <div className="flex items-center gap-4 text-gray-400 pt-4 border-t border-gray-100 dark:border-white/5">
                    <button className="flex items-center gap-1 hover:text-[#0066FF] transition-colors"><ArrowUp className="w-4 h-4" /> {item.upvotes_count}</button>
-                   <button className="flex items-center gap-1 hover:text-white transition-colors"><MessageCircle className="w-4 h-4" /> {item.comments_count}</button>
-                   <button className="ml-auto hover:text-white"><Share2 className="w-4 h-4" /></button>
+                   <button className="flex items-center gap-1 hover:text-[#1A1A1A] dark:hover:text-white transition-colors"><MessageCircle className="w-4 h-4" /> {item.comments_count}</button>
+                   <button className="ml-auto hover:text-[#1A1A1A] dark:hover:text-white"><Share2 className="w-4 h-4" /></button>
                 </div>
               </div>
             </motion.div>
