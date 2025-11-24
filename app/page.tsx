@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
-import ToolCard from '@/components/ToolCard';
+import ToolCard from '@/components/ToolCardItem';
 import Link from 'next/link';
 import { Search, Sparkles, ArrowRight } from 'lucide-react';
 
