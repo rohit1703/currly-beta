@@ -1,84 +1,143 @@
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
-import ToolCard from '@/components/ToolCardItem';
+import ToolCard from '@/components/ToolCardItem'; // Using the component we fixed earlier
 import Link from 'next/link';
-import { Search, Sparkles, ArrowRight } from 'lucide-react';
+import { 
+  Search, 
+  Sparkles, 
+  LayoutGrid, 
+  Filter, 
+  Zap, 
+  Menu,
+  Globe
+} from 'lucide-react';
 
 export default async function Home() {
-  // 1. Initialize Supabase Client (Server Side)
-  const cookieStore = cookies();
+  // 1. Initialize Supabase (Next.js 16 Safe)
+  const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // 2. Fetch Tools from DB
-  const { data: tools, error } = await supabase
+  // 2. Fetch Tools
+  const { data: tools } = await supabase
     .from('tools')
     .select('*')
-    //.eq('launch_status', 'Live') // Uncomment this once you are ready to filter by status
+    .eq('launch_status', 'Live') // Only show live tools
     .order('launch_date', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching tools:', error);
-  }
-
   return (
-    <main className="min-h-screen bg-white dark:bg-black">
-      {/* --- HERO SECTION --- */}
-      <section className="relative overflow-hidden border-b border-gray-100 bg-white pt-24 pb-16 dark:border-gray-800 dark:bg-black">
-        <div className="container mx-auto px-4 text-center">
-          <div className="mb-6 inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-400">
-            <Sparkles className="mr-2 h-4 w-4" />
-            The World's First AI Tools Discovery Engine
+    <div className="flex min-h-screen bg-gray-50 dark:bg-black">
+      
+      {/* --- SIDEBAR --- */}
+      <aside className="hidden w-64 border-r border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-black md:block">
+        <div className="mb-8 flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
+            <span className="font-bold">C</span>
           </div>
-          
-          <h1 className="mb-6 text-5xl font-bold tracking-tight text-gray-900 dark:text-white md:text-6xl">
-            Discover the best <span className="text-blue-600">AI Tools</span> <br />
-            for your workflow.
-          </h1>
-          
-          <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-            Currly tracks over 700+ AI tools to help you find exactly what you need. 
-            Stop searching, start building.
-          </p>
+          <span className="text-xl font-bold text-gray-900 dark:text-white">Currly</span>
+        </div>
 
-          <div className="flex justify-center gap-4">
-            <Link href="/dashboard" className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-6 py-3 text-white transition-colors hover:bg-blue-700">
-              Start Exploring <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-            <button className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-6 py-3 text-gray-900 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800">
-              <Search className="mr-2 h-4 w-4" /> Search Tools
+        <nav className="space-y-6">
+          <div>
+            <h3 className="mb-2 px-2 text-xs font-semibold uppercase text-gray-400">Discover</h3>
+            <div className="space-y-1">
+              <button className="flex w-full items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                <LayoutGrid className="h-4 w-4" />
+                All Tools
+              </button>
+              <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800">
+                <Sparkles className="h-4 w-4" />
+                Featured
+              </button>
+              <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800">
+                <Globe className="h-4 w-4" />
+                Global Top 10
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="mb-2 px-2 text-xs font-semibold uppercase text-gray-400">Filters</h3>
+            <div className="space-y-1">
+              {/* Placeholder filters for Sprint 2 */}
+              <div className="px-3 py-2 text-sm text-gray-500">Price Model</div>
+              <div className="px-3 py-2 text-sm text-gray-500">Team Size</div>
+              <div className="px-3 py-2 text-sm text-gray-500">Industry</div>
+            </div>
+          </div>
+        </nav>
+      </aside>
+
+      {/* --- MAIN CONTENT --- */}
+      <main className="flex-1">
+        
+        {/* Header */}
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-gray-200 bg-white/80 px-6 backdrop-blur-md dark:border-gray-800 dark:bg-black/80">
+          <div className="flex flex-1 items-center gap-4">
+            <button className="md:hidden">
+              <Menu className="h-6 w-6 text-gray-600" />
+            </button>
+            
+            {/* Search Bar */}
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Search 700+ AI tools..." 
+                className="w-full rounded-full border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black">
+              Sign In
             </button>
           </div>
-        </div>
-      </section>
+        </header>
 
-      {/* --- TOOLS GRID --- */}
-      <section className="container mx-auto py-16 px-4">
-        <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recently Added</h2>
-          <span className="text-sm text-gray-500">{tools?.length || 0} tools indexed</span>
-        </div>
-
-        {/* The Grid */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {tools?.map((tool) => (
-            <ToolCard 
-              key={tool.id}
-              title={tool.name || 'Untitled Tool'}
-              description={tool.description || 'No description available.'}
-              category={tool.main_category || 'Uncategorized'}
-              pricing={tool.pricing_model || 'Unknown'} 
-              image={tool.image_url || ''}
-              url={tool.website || '#'}
-            />
-          ))}
-          
-          {(!tools || tools.length === 0) && (
-            <div className="col-span-full py-12 text-center text-gray-500">
-              No tools found. Try running the sync API!
+        {/* Content Area */}
+        <div className="p-6">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Discover AI Tools</h1>
+              <p className="text-sm text-gray-500">The world's first AI tools discovery engine.</p>
             </div>
-          )}
+            
+            <div className="flex gap-2">
+              <button className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 dark:border-gray-800 dark:bg-black dark:text-gray-300">
+                <Filter className="h-4 w-4" /> Filters
+              </button>
+            </div>
+          </div>
+
+          {/* Tools Grid */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {tools?.map((tool) => (
+              <ToolCard 
+                key={tool.id}
+                title={tool.name || 'Untitled'}
+                description={tool.description || ''}
+                category={tool.main_category || 'General'}
+                pricing={tool.pricing_model || 'Unknown'} 
+                image={tool.image_url || ''}
+                url={tool.website || '#'}
+              />
+            ))}
+            
+            {(!tools || tools.length === 0) && (
+              <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+                <div className="mb-4 rounded-full bg-blue-50 p-4 dark:bg-blue-900/20">
+                  <Zap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Database is Empty</h3>
+                <p className="max-w-md text-gray-500">
+                  Add the <strong>SUPABASE_SERVICE_ROLE_KEY</strong> to Vercel and run the sync API to populate your 700+ tools.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </section>
-    </main>
+      </main>
+    </div>
   );
 }
