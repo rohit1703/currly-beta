@@ -1,128 +1,149 @@
-import { createClient } from '@/utils/supabase/server';
-import { cookies } from 'next/headers';
-import ToolCard from '@/components/ToolCardItem'; 
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Sparkles, ArrowRight, Zap, Filter } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Search, ArrowRight, Code, PenTool, Globe, Zap, LayoutGrid } from 'lucide-react';
 
-export default async function Home() {
-  // 1. Initialize Supabase (Next.js 16 Safe)
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+// Assuming these exist in your project. If not, comment them out temporarily.
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { Logo } from '@/components/Logo';
+import { useCountUp } from '@/hooks/useCountUp';
+import UserNav from '@/components/UserNav';
 
-  // 2. Fetch Tools
-  const { data: tools } = await supabase
-    .from('tools')
-    .select('*')
-    .eq('launch_status', 'Live')
-    .order('launch_date', { ascending: false });
+function StatItem({ value, label, suffix = "+" }: { value: number, label: string, suffix?: string }) {
+  const count = useCountUp(value);
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="bg-white dark:bg-neutral-900 p-8 rounded-3xl border border-gray-200 dark:border-white/10 shadow-sm text-center hover:shadow-md transition-all"
+    >
+      <div className="text-5xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-2 flex justify-center">
+        <motion.span>{count}</motion.span>{suffix}
+      </div>
+      <div className="text-sm font-bold text-gray-500 uppercase tracking-wider">{label}</div>
+    </motion.div>
+  );
+}
+
+export default function Home() {
+  const [query, setQuery] = useState('');
+  const [scrollY, setScrollY] = useState(0);
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) router.push(`/dashboard?q=${encodeURIComponent(query)}`);
+  };
+
+  const categories = [
+    { name: "Marketing & SEO", icon: Zap, tools: "120+", slug: "marketing" },
+    { name: "Development", icon: Code, tools: "85+", slug: "coding" },
+    { name: "Design & Video", icon: PenTool, tools: "94+", slug: "video" },
+    { name: "Productivity", icon: LayoutGrid, tools: "200+", slug: "productivity" },
+  ];
 
   return (
-    <main className="min-h-screen bg-white dark:bg-black">
+    <div className="min-h-screen bg-neutral-50 dark:bg-black text-gray-900 dark:text-white font-sans transition-colors duration-500 overflow-x-hidden">
       
-      {/* --- NAVBAR --- */}
-      <nav className="flex h-16 items-center justify-between border-b border-gray-100 bg-white px-6 dark:border-gray-800 dark:bg-black">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
-            <span className="font-bold">C</span>
-          </div>
-          <span className="text-xl font-bold text-gray-900 dark:text-white">Currly</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">
-            For Creators
+      {/* --- NAV --- */}
+      <nav className="fixed top-0 w-full z-50 px-6 py-4 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-100 dark:border-white/10">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <Link href="/">
+             {/* If Logo doesn't exist, replace <Logo /> with <span className="font-bold text-xl">Currly</span> */}
+            <Logo />
           </Link>
-          <button className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 dark:bg-white dark:text-black">
-            Sign In
-          </button>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <UserNav />
+            <Link href="/dashboard" className="bg-[#0066FF] hover:bg-[#0052CC] text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg shadow-blue-500/20">
+              Get Started
+            </Link>
+          </div>
         </div>
       </nav>
 
-      {/* --- HERO SECTION (The part you were missing) --- */}
-      <section className="relative overflow-hidden border-b border-gray-100 bg-white pt-24 pb-20 dark:border-gray-800 dark:bg-black">
-        <div className="container mx-auto px-4 text-center">
-          
-          {/* Badge */}
-          <div className="mb-8 inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-600 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-400">
-            <Sparkles className="mr-2 h-4 w-4" />
-            The World's First AI Tools Discovery Engine
-          </div>
-          
-          {/* Headline */}
-          <h1 className="mb-6 text-5xl font-bold tracking-tight text-gray-900 dark:text-white md:text-7xl">
-            Discover the best <span className="text-blue-600">AI Tools</span> <br />
-            for your workflow.
-          </h1>
-          
-          {/* Subtitle */}
-          <p className="mx-auto mb-10 max-w-2xl text-lg text-gray-600 dark:text-gray-400">
-            Currly tracks over 700+ AI tools to help you find exactly what you need. 
-            Stop searching, start building.
-          </p>
+      {/* --- HERO SECTION --- */}
+      <div className="pt-40 pb-20 px-4 text-center max-w-7xl mx-auto relative">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-500/5 dark:bg-white/5 rounded-full blur-[120px] pointer-events-none" />
 
-          {/* Centered Search Bar */}
-          <div className="mx-auto max-w-2xl">
-            <div className="relative flex items-center">
-              <Search className="absolute left-4 h-5 w-5 text-gray-400" />
+        {/* BADGE UPDATE */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-white/10 rounded-full mb-8 border border-blue-100 dark:border-white/10">
+          <Globe className="w-4 h-4 text-[#0066FF] dark:text-white" />
+          <span className="text-xs font-bold uppercase tracking-wide text-[#0066FF] dark:text-white">The World's First AI Tools Search Engine</span>
+        </motion.div>
+
+        {/* HEADLINE UPDATE */}
+        <h1 className="relative text-5xl md:text-7xl lg:text-8xl font-extrabold mb-8 leading-[1.1] tracking-tighter text-gray-900 dark:text-white">
+          Discover the Perfect <br/>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0066FF] to-cyan-500">AI Tool in Seconds</span>
+        </h1>
+
+        <p className="relative text-xl text-gray-500 dark:text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
+          Stop searching. Start building. <br className="hidden md:block"/>
+          <span className="text-gray-900 dark:text-white font-bold">712+ tools</span> curated by experts, powered by AI, and validated by <span className="text-gray-900 dark:text-white font-bold">420+ professionals</span>.
+        </p>
+
+        {/* SEARCH */}
+        <div className="relative max-w-3xl mx-auto mb-24 z-10">
+          <form onSubmit={handleSearch} className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#0066FF] to-cyan-500 rounded-2xl opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
+            <div className="relative flex items-center gap-4 bg-white dark:bg-[#111] rounded-2xl p-3 shadow-2xl border border-gray-200 dark:border-white/10">
+              <Search className="w-6 h-6 text-gray-400 ml-3" />
               <input 
                 type="text" 
-                placeholder="Search for 'video editor', 'chatbot', or 'coding assistant'..." 
-                className="h-14 w-full rounded-2xl border-2 border-gray-100 bg-gray-50 pl-12 pr-4 text-lg outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Describe your problem (e.g. 'I need to automate invoices')..."
+                className="flex-1 text-lg bg-transparent border-none focus:ring-0 outline-none h-12 text-gray-900 dark:text-white placeholder-gray-400"
               />
-              <button className="absolute right-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700">
-                Search
+              <button type="submit" className="bg-[#0066FF] hover:bg-[#0052CC] text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2">
+                Search <ArrowRight className="w-5 h-5" />
               </button>
             </div>
-            <div className="mt-4 flex flex-wrap justify-center gap-2 text-sm text-gray-500">
-              <span>Popular:</span>
-              <span className="cursor-pointer hover:text-blue-600">ChatGPT</span>
-              <span className="cursor-pointer hover:text-blue-600">Midjourney</span>
-              <span className="cursor-pointer hover:text-blue-600">Notion AI</span>
-              <span className="cursor-pointer hover:text-blue-600">Jasper</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* --- TOOLS GRID SECTION --- */}
-      <section className="container mx-auto py-16 px-4">
-        <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recently Added</h2>
-          <div className="flex items-center gap-3">
-             <span className="text-sm text-gray-500">{tools?.length || 0} tools indexed</span>
-             <button className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 dark:border-gray-800 dark:bg-black dark:text-gray-300">
-                <Filter className="h-4 w-4" /> Filters
-              </button>
+          </form>
+          <div className="flex flex-wrap justify-center gap-3 mt-6 text-sm">
+             <span className="text-gray-400 py-1">Trending:</span>
+             {['Video Editing', 'CRM', 'Chatbots'].map(t => (
+               <button key={t} onClick={() => setQuery(t)} className="px-3 py-1 rounded-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:text-[#0066FF] transition-colors text-gray-600 dark:text-gray-300">
+                 {t}
+               </button>
+             ))}
           </div>
         </div>
 
-        {/* The Grid */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {tools?.map((tool) => (
-            <ToolCard 
-              key={tool.id}
-              title={tool.name || 'Untitled Tool'}
-              description={tool.description || 'No description available.'}
-              category={tool.main_category || 'Uncategorized'}
-              pricing={tool.pricing_model || 'Unknown'} 
-              image={tool.image_url || ''}
-              url={tool.website || '#'}
-            />
-          ))}
-          
-          {/* Empty State */}
-          {(!tools || tools.length === 0) && (
-            <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
-              <div className="mb-6 rounded-full bg-blue-50 p-6 dark:bg-blue-900/20">
-                 <Zap className="h-10 w-10 text-blue-600 dark:text-blue-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Database is Empty</h3>
-              <p className="mt-2 max-w-md text-gray-500">
-                Add the <strong>SUPABASE_SERVICE_ROLE_KEY</strong> to Vercel and run the sync API to populate your tools.
-              </p>
-            </div>
-          )}
+        {/* DISCOVERY PREVIEW */}
+        <div className="relative z-10 mb-24">
+           <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-8">Explore by Category</p>
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {categories.map((cat, i) => (
+                <div key={i} onClick={() => router.push(`/dashboard?q=${cat.slug}`)} className="cursor-pointer bg-white dark:bg-[#111] p-6 rounded-2xl border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group text-left">
+                   <div className="w-10 h-10 bg-blue-50 dark:bg-white/5 rounded-lg flex items-center justify-center text-[#0066FF] mb-4 group-hover:scale-110 transition-transform">
+                     <cat.icon className="w-5 h-5" />
+                   </div>
+                   <h3 className="font-bold text-gray-900 dark:text-white">{cat.name}</h3>
+                   <p className="text-xs text-gray-500">{cat.tools} Tools</p>
+                </div>
+              ))}
+           </div>
         </div>
-      </section>
-    </main>
+
+        {/* STATS */}
+        <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 z-10">
+           <StatItem value={712} label="AI Tools Curated" />
+           <StatItem value={420} label="Active Members" />
+           <StatItem value={15} label="Categories" />
+        </div>
+      </div>
+    </div>
   );
 }
