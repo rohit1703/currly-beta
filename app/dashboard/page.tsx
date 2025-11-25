@@ -2,9 +2,8 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import ToolCard from '@/components/ToolCardItem'; 
 import Link from 'next/link';
-import { Search, ArrowLeft, Zap, Filter } from 'lucide-react';
+import { Search, ArrowLeft } from 'lucide-react';
 
-// In Next.js 15/16, searchParams is a Promise
 export default async function Dashboard({
   searchParams,
 }: {
@@ -18,10 +17,10 @@ export default async function Dashboard({
   const supabase = createClient(cookieStore);
 
   // 2. Build the Database Query
+  // We removed the .eq('launch_status') filter because the data is already filtered at the source
   let dbQuery = supabase
     .from('tools')
     .select('*')
-    .eq('launch_status', 'Live')
     .order('launch_date', { ascending: false });
 
   // 3. Apply Search Filter (if query exists)
@@ -32,6 +31,10 @@ export default async function Dashboard({
 
   // 4. Fetch Data
   const { data: tools, error } = await dbQuery;
+
+  if (error) {
+    console.error("Search Error:", error);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
@@ -54,18 +57,6 @@ export default async function Dashboard({
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
               {tools?.length || 0} found
             </span>
-          </div>
-
-          <div className="hidden md:block">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Search again..." 
-                defaultValue={query} // Shows current search in box
-                className="h-9 w-64 rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm outline-none focus:border-blue-500 focus:bg-white dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-              />
-            </div>
           </div>
         </div>
       </header>
