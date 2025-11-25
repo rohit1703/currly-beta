@@ -2,17 +2,21 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion'; // Imported Variants type
 import { ArrowLeft, Shield, Users, Zap, Search, Clock, Linkedin, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
-// Animation Variants
-const fadeInUp = {
+// Animation Variants - Explicitly typed to fix Build Error
+const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } }
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { duration: 0.8, ease: "easeOut" } 
+  }
 };
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -22,9 +26,13 @@ const staggerContainer = {
   }
 };
 
-const scaleIn = {
+const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.9 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.6 } }
+  visible: { 
+    opacity: 1, 
+    scale: 1, 
+    transition: { duration: 0.6 } 
+  }
 };
 
 export default function AboutClient() {
@@ -227,7 +235,7 @@ export default function AboutClient() {
                   </div>
                   <p className="text-xs font-bold text-[#0066FF] uppercase tracking-wider mb-4">Co-founder, Currly</p>
                   <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed font-medium">
-                    The engineer who thinks like a researcher. Rohit builds the intelligence layer—the extraction engine and semantic search pipeline that never breaks. He believes great products are built on systems &gt; features.
+                    The engineer who thinks like a researcher. Rohit builds the intelligence layer—the extraction engine and semantic search pipeline. He believes great products are built on systems &gt; features.
                   </p>
                 </div>
                 <div>
@@ -337,9 +345,7 @@ export default function AboutClient() {
           className="container mx-auto px-4 mb-24"
         >
           <div className="relative rounded-[2.5rem] bg-gradient-to-b from-[#0066FF] to-blue-900 overflow-hidden text-center px-6 py-24 md:py-32 shadow-2xl">
-            {/* Glow effects */}
             <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
-            
             <div className="relative z-10 max-w-3xl mx-auto">
               <h2 className="text-4xl md:text-6xl font-bold text-white mb-8 tracking-tight">
                 Take back control of <br/> your tech stack.
@@ -359,7 +365,6 @@ export default function AboutClient() {
           </div>
         </motion.section>
 
-        {/* --- FOOTER NOTE --- */}
         <div className="text-center text-gray-500 dark:text-gray-600 text-sm pb-16">
           <p>Currly — Built in August 2025. Updated every Sunday at 9 AM IST.</p>
           <p className="mt-2">Honest forever. Free forever. For you forever.</p>
