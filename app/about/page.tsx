@@ -9,242 +9,257 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-white text-black font-sans selection:bg-[#0066FF] selection:text-white">
+    <div className="min-h-screen bg-black text-white font-sans selection:bg-[#0066FF] selection:text-white overflow-x-hidden">
       
+      {/* --- LIGHTHOUSE BEAM EFFECT --- */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[#0066FF] opacity-20 blur-[120px] rounded-full pointer-events-none z-0" />
+
       {/* --- NAV --- */}
-      <nav className="sticky top-0 z-50 border-b border-black/10 bg-white/90 backdrop-blur-md px-6 py-5">
+      <nav className="sticky top-0 z-50 border-b border-white/10 bg-black/50 backdrop-blur-xl px-6 py-5">
         <div className="container mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide hover:text-[#0066FF] transition-colors">
-            <ArrowLeft className="h-4 w-4" /> Back
+          <Link href="/" className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-gray-400 hover:text-white transition-colors">
+            <ArrowLeft className="h-4 w-4" /> Back to Home
           </Link>
           <span className="font-bold text-xl tracking-tight">Currly</span>
         </div>
       </nav>
 
-      {/* --- HERO --- */}
-      <header className="container mx-auto px-4 py-24 md:py-40 border-b border-black/10">
-        <div className="max-w-5xl">
-          <p className="text-[#0066FF] font-bold uppercase tracking-widest mb-6 text-xs">[ About Us ]</p>
-          <h1 className="text-5xl md:text-8xl font-bold leading-[1.05] mb-12 tracking-tight">
+      <main className="relative z-10">
+        
+        {/* --- HERO --- */}
+        <header className="container mx-auto px-4 py-32 md:py-48 text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#0066FF]/30 bg-[#0066FF]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-[#0066FF] mb-8 shadow-[0_0_20px_rgba(0,102,255,0.3)]">
+            <Zap className="h-3 w-3" /> Est. August 2025
+          </div>
+          
+          <h1 className="text-5xl md:text-8xl font-bold leading-[1.1] mb-12 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-gray-500">
             We built a lighthouse in a <br />
-            sea of <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0066FF] to-blue-400">AI tools.</span>
+            sea of AI tools.
           </h1>
-          <div className="max-w-2xl text-xl md:text-2xl leading-relaxed text-gray-800 font-medium">
+          
+          <div className="max-w-2xl mx-auto text-xl md:text-2xl leading-relaxed text-gray-400 font-medium">
             <p>
-              In a world where 10,000+ AI tools compete for your attention, finding the right one shouldn't feel like gambling. Yet it does. Because discovery is broken.
+              In a world where 10,000+ AI tools compete for your attention, finding the right one shouldn't feel like gambling.
+            </p>
+            <p className="text-white mt-4">
+              Yet it does. Because discovery is broken.
             </p>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main>
-        {/* --- THE NARRATIVE --- */}
-        <section className="container mx-auto px-4 py-24">
-          <div className="grid md:grid-cols-12 gap-12">
-            <div className="md:col-span-4">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-400 sticky top-32">[ The Problem ]</h3>
-            </div>
-            <div className="md:col-span-8 prose prose-lg prose-gray max-w-none text-gray-700 leading-loose">
-              <p className="text-3xl font-medium text-black mb-8 leading-tight">
+        {/* --- THE PROBLEM (Glass Card) --- */}
+        <section className="container mx-auto px-4 mb-32">
+          <div className="max-w-4xl mx-auto rounded-3xl border border-white/10 bg-white/5 p-8 md:p-16 backdrop-blur-sm relative overflow-hidden">
+            {/* Decorative gradient inside card */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 blur-[80px] rounded-full" />
+            
+            <h2 className="text-3xl font-bold mb-8 text-white relative z-10">The Problem We Saw</h2>
+            <div className="prose prose-lg prose-invert max-w-none text-gray-300 leading-relaxed relative z-10">
+              <p className="text-xl font-medium text-white mb-8 border-l-4 border-[#0066FF] pl-6 py-2">
                 "You can't build honest discovery on dishonest economics."
               </p>
               <p>
-                August 2025. Two professionals, same frustration: Every search for AI tools led to the same dead ends. Listicles ranked by affiliate commissions. "Reviews" written by marketers who'd never opened the product.
+                August 2025. Two professionals, same frustration: Every search for AI tools led to the same dead ends. Listicles ranked by affiliate commissions. "Reviews" written by marketers who never opened the product.
               </p>
               <p>
-                The entire AI tools discovery ecosystem was built on a corrupted incentive: <strong>Get paid to recommend, regardless of whether it's right for the user.</strong>
+                The entire AI tools discovery ecosystem was built on a corrupted incentive: <strong>Get paid to recommend, regardless of whether it is right for the user.</strong>
               </p>
               <p>
-                So we started over. Different incentives. Different architecture. Different truth. <strong>That's Currly.</strong>
+                So we started over. Different incentives. Different architecture. Different truth. <strong>That is Currly.</strong>
               </p>
             </div>
           </div>
         </section>
 
-        {/* --- VALUES GRID (Unique Style) --- */}
-        <section className="border-t border-black/10 bg-gray-50">
-          <div className="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-black/10">
-            
-            {/* Title Block - Electric Blue */}
-            <div className="bg-[#0066FF] p-12 text-white min-h-[400px] flex flex-col justify-between relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
-              <span className="uppercase tracking-widest font-bold text-xs text-white/60 relative z-10">[ Core Values ]</span>
-              <div className="relative z-10">
-                <h2 className="text-4xl font-bold text-white mb-6">What we stand for</h2>
-                <p className="text-white/90 text-lg leading-relaxed">
-                  Our values aren't just buzzwords. They are the guardrails that shape every recommendation we deliver.
-                </p>
-              </div>
-            </div>
-
-            {/* Value 1 */}
-            <div className="p-12 bg-white min-h-[400px] flex flex-col justify-between hover:bg-blue-50/30 transition-colors group">
-              <Shield className="h-8 w-8 text-gray-300 group-hover:text-[#0066FF] transition-colors mb-auto" />
-              <div>
-                <h3 className="text-2xl font-bold mb-4">Zero Affiliate Corruption</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  We don't earn commissions. We don't accept payments for rankings. When we recommend a tool, it's because it genuinely solves your problem.
-                </p>
-              </div>
-            </div>
-
-            {/* Value 2 */}
-            <div className="p-12 bg-white min-h-[400px] flex flex-col justify-between hover:bg-blue-50/30 transition-colors group">
-              <Users className="h-8 w-8 text-gray-300 group-hover:text-[#0066FF] transition-colors mb-auto" />
-              <div>
-                <h3 className="text-2xl font-bold mb-4">Individuals Over Enterprises</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Currly exists for you—the solo developer, the freelance designer, the marketer on a budget. Not enterprise procurement teams.
-                </p>
-              </div>
-            </div>
-
-          </div>
-          
-          {/* Row 2 of Grid */}
-          <div className="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-black/10 border-t border-black/10">
-             {/* Value 3 */}
-             <div className="p-12 bg-white min-h-[350px] flex flex-col justify-between hover:bg-blue-50/30 transition-colors group">
-              <Search className="h-8 w-8 text-gray-300 group-hover:text-[#0066FF] transition-colors mb-auto" />
-              <div>
-                <h3 className="text-2xl font-bold mb-4">Intelligence Over Lists</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  We're not a directory. We're a discovery engine. Search by intent, not just keywords. Context matters.
-                </p>
-              </div>
-            </div>
-
-            {/* Value 4 */}
-            <div className="p-12 bg-white min-h-[350px] flex flex-col justify-between hover:bg-blue-50/30 transition-colors group">
-              <Clock className="h-8 w-8 text-gray-300 group-hover:text-[#0066FF] transition-colors mb-auto" />
-              <div>
-                <h3 className="text-2xl font-bold mb-4">Current Over Archived</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  Updated every Sunday at 9 AM IST. Without fail. If it's on Currly, it's current.
-                </p>
-              </div>
-            </div>
-
-            {/* Design Element */}
-            <div className="p-12 bg-[#F8FAFC] flex items-center justify-center border-l border-black/10">
-                <div className="text-center opacity-50">
-                    <div className="text-5xl mb-4 font-serif italic">"Unbiased."</div>
-                    <p className="font-bold text-gray-400 uppercase text-xs tracking-[0.2em]">Always.</p>
+        {/* --- NON-NEGOTIABLES (Grid) --- */}
+        <section className="container mx-auto px-4 mb-32">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">Our Non-Negotiables</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                title: "Zero Affiliate Corruption",
+                desc: "We don't earn commissions. We don't accept payments for rankings. When we recommend a tool, it's because it genuinely solves your problem.",
+                icon: Shield,
+                gradient: "from-red-500/20 to-orange-500/5"
+              },
+              {
+                title: "Individuals Over Enterprises",
+                desc: "Currly exists for you—the solo developer, the freelance designer, the marketer on a budget. Not enterprise procurement teams.",
+                icon: Users,
+                gradient: "from-blue-500/20 to-cyan-500/5"
+              },
+              {
+                title: "Intelligence Over Lists",
+                desc: "We're not a directory. We're a discovery engine. Search by intent, not just keywords. Context matters.",
+                icon: Search,
+                gradient: "from-purple-500/20 to-pink-500/5"
+              },
+              {
+                title: "Current Over Archived",
+                desc: "Updated every Sunday at 9 AM IST. Without fail. If it's on Currly, it's current.",
+                icon: Clock,
+                gradient: "from-green-500/20 to-emerald-500/5"
+              }
+            ].map((item, i) => (
+              <div key={i} className={`group p-10 rounded-3xl border border-white/10 bg-gradient-to-br ${item.gradient} hover:border-[#0066FF]/50 transition-all duration-300 relative overflow-hidden`}>
+                <div className="absolute top-4 right-4 opacity-20 group-hover:opacity-100 transition-opacity">
+                  <item.icon className="h-24 w-24 text-white/5 group-hover:text-[#0066FF]/20" />
                 </div>
-            </div>
+                <item.icon className="h-10 w-10 text-white mb-6" />
+                <h3 className="text-2xl font-bold mb-4 text-white">{item.title}</h3>
+                <p className="text-gray-400 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* --- FOUNDERS --- */}
-        <section className="bg-[#0A0A0A] text-white py-32">
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-12 gap-12">
-              <div className="md:col-span-4">
-                 <h2 className="text-4xl md:text-5xl font-bold mb-6">Meet the <br/><span className="text-[#0066FF]">Humans.</span></h2>
-                 <p className="text-gray-400 leading-relaxed mb-8">
-                   Two founders. One mission: Make AI tool discovery honest, intelligent, and human.
-                 </p>
-                 <div className="hidden md:block w-12 h-1 bg-[#0066FF]"></div>
+        {/* --- FOUNDERS (Side by Side) --- */}
+        <section className="container mx-auto px-4 mb-32">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold">The Humans Behind Currly</h2>
+            <p className="text-gray-400 mt-4">Two founders. One mission.</p>
+          </div>
+
+          <div className="max-w-5xl mx-auto rounded-[2rem] border border-white/10 bg-white/5 overflow-hidden">
+            <div className="grid md:grid-cols-2">
+              {/* Image Side */}
+              <div className="relative h-[400px] md:h-auto border-b md:border-b-0 md:border-r border-white/10">
+                 <img 
+                   src="/founders.jpg" 
+                   alt="Rohit and Ashish" 
+                   className="absolute inset-0 w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity duration-700 grayscale hover:grayscale-0"
+                 />
               </div>
 
-              <div className="md:col-span-8">
-                {/* IMAGE CONTAINER */}
-                <div className="aspect-[16/9] relative w-full mb-16 overflow-hidden bg-gray-800 border border-white/10">
-                   <img 
-                     src="/founders.jpg" 
-                     alt="Rohit and Ashish" 
-                     className="object-cover w-full h-full grayscale hover:grayscale-0 transition-all duration-700"
-                   />
+              {/* Content Side */}
+              <div className="p-10 md:p-16 flex flex-col justify-center space-y-12">
+                {/* Rohit */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-2xl font-bold text-white">Rohit Bangaram</h3>
+                    <a href="#" className="text-gray-500 hover:text-[#0066FF]"><Linkedin size={20}/></a>
+                  </div>
+                  <p className="text-xs font-bold text-[#0066FF] uppercase tracking-wider mb-4">Product Architect</p>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    The engineer who thinks like a researcher. Builds the intelligence layer and extraction engine. Believes systems &gt; features.
+                  </p>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-16">
-                  <div>
-                    <div className="flex justify-between items-end mb-6 border-b border-white/10 pb-4">
-                      <h3 className="text-2xl font-bold">Rohit Bangaram</h3>
-                      <a href="#" className="text-[#0066FF] hover:text-white transition-colors"><Linkedin size={20}/></a>
-                    </div>
-                    <p className="text-sm font-bold text-[#0066FF] uppercase tracking-wider mb-3">Product Architect</p>
-                    {/* FIXED: Escaped the > symbol to &gt; */}
-                    <p className="text-gray-400 leading-relaxed">
-                      The engineer who thinks like a researcher. Rohit builds the intelligence layer—the extraction engine and semantic search pipeline that never breaks. He believes great products are built on systems &gt; features.
-                    </p>
+                {/* Ashish */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-2xl font-bold text-white">Ashish Singh</h3>
+                    <a href="#" className="text-gray-500 hover:text-[#0066FF]"><Linkedin size={20}/></a>
                   </div>
-
-                  <div>
-                    <div className="flex justify-between items-end mb-6 border-b border-white/10 pb-4">
-                      <h3 className="text-2xl font-bold">Ashish Singh</h3>
-                      <a href="#" className="text-[#0066FF] hover:text-white transition-colors"><Linkedin size={20}/></a>
-                    </div>
-                    <p className="text-sm font-bold text-[#0066FF] uppercase tracking-wider mb-3">Strategic Vision</p>
-                    <p className="text-gray-400 leading-relaxed">
-                      The strategist who thinks like a storyteller. Ashish shapes Currly's positioning and principles. He believes trust isn't marketed—it's earned through consistent truth.
-                    </p>
-                  </div>
+                  <p className="text-xs font-bold text-[#0066FF] uppercase tracking-wider mb-4">Strategic Vision</p>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    The strategist who thinks like a storyteller. Shapes positioning and principles. Believes trust isn&apos;t marketed—it&apos;s earned.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* --- VISION (Simplified) --- */}
-        <section className="py-32 container mx-auto px-4 border-b border-black/10">
-           <div className="max-w-5xl mx-auto">
-             <div className="text-center mb-20">
-                <span className="text-[#0066FF] font-bold uppercase tracking-widest text-xs mb-4 block">[ Roadmap ]</span>
-                <h2 className="text-3xl md:text-5xl font-bold">The Three-Stage Vision</h2>
-             </div>
+        {/* --- VISION (3 Stages) --- */}
+        <section className="container mx-auto px-4 mb-32">
+           <h2 className="text-3xl font-bold text-center mb-16">The Three-Stage Vision</h2>
+           <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-4">
              
-             <div className="grid md:grid-cols-3 gap-8">
-               {/* Stage 1 */}
-               <div className="border-t-4 border-[#0066FF] pt-8 pr-4">
-                 <div className="flex justify-between items-center mb-4">
-                    <div className="text-xs font-bold text-black uppercase tracking-wider">Stage 1 (Now)</div>
-                    <div className="h-2 w-2 rounded-full bg-[#0066FF]"></div>
-                 </div>
-                 <h3 className="text-3xl font-bold mb-2 text-black">Discovery</h3>
-                 <p className="text-gray-500 text-sm mt-4">Find the right tool. Semantic search. Honest validation. Zero bias.</p>
-               </div>
-
-               {/* Stage 2 */}
-               <div className="border-t-4 border-gray-200 pt-8 pr-4 opacity-50">
-                 <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Stage 2</div>
-                 <h3 className="text-3xl font-bold mb-2 text-black">Orchestration</h3>
-               </div>
-
-               {/* Stage 3 */}
-               <div className="border-t-4 border-gray-200 pt-8 pr-4 opacity-50">
-                 <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Stage 3</div>
-                 <h3 className="text-3xl font-bold mb-2 text-black">Optimization</h3>
-               </div>
+             {/* Stage 1 */}
+             <div className="p-8 rounded-2xl bg-[#0066FF] text-white border border-[#0066FF] shadow-[0_0_30px_rgba(0,102,255,0.3)] relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-4 opacity-20"><CheckCircle2 size={40}/></div>
+               <div className="text-xs font-bold uppercase tracking-wider mb-2 opacity-80">Stage 1: Live Now</div>
+               <h3 className="text-2xl font-bold mb-2">Discovery</h3>
+               <p className="text-white/80 text-sm">Semantic search. Honest validation. Weekly updates. Where trust begins.</p>
              </div>
+
+             {/* Stage 2 */}
+             <div className="p-8 rounded-2xl bg-white/5 text-gray-400 border border-white/10 border-dashed">
+               <div className="text-xs font-bold uppercase tracking-wider mb-2 opacity-60">Stage 2</div>
+               <h3 className="text-2xl font-bold mb-2 text-white">Orchestration</h3>
+               <p className="text-sm opacity-60">In Development</p>
+             </div>
+
+             {/* Stage 3 */}
+             <div className="p-8 rounded-2xl bg-white/5 text-gray-400 border border-white/10 border-dashed">
+               <div className="text-xs font-bold uppercase tracking-wider mb-2 opacity-60">Stage 3: 2026</div>
+               <h3 className="text-2xl font-bold mb-2 text-white">Optimization</h3>
+               <p className="text-sm opacity-60">Planned</p>
+             </div>
+
            </div>
         </section>
 
-        {/* --- CTA --- */}
-        <section className="bg-[#0066FF] py-32 text-center px-4 text-white relative overflow-hidden">
-          {/* Background decorative circles */}
-          <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20">
-             <div className="absolute -top-24 -left-24 w-96 h-96 bg-white rounded-full blur-3xl"></div>
-             <div className="absolute top-1/2 right-0 w-64 h-64 bg-black rounded-full blur-3xl"></div>
+        {/* --- NUMBERS --- */}
+        <section className="container mx-auto px-4 mb-32">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 rounded-2xl overflow-hidden border border-white/10">
+            {[
+              { num: "700+", label: "Tools Vetted" },
+              { num: "400+", label: "Community" },
+              { num: "16+", label: "Categories" },
+              { num: "100%", label: "Updated Weekly" },
+            ].map((stat, i) => (
+              <div key={i} className="bg-[#0A0A0A] p-10 text-center hover:bg-white/5 transition-colors">
+                <div className="text-4xl md:text-5xl font-bold text-white mb-2">{stat.num}</div>
+                <div className="text-sm text-gray-500 uppercase tracking-wider">{stat.label}</div>
+              </div>
+            ))}
           </div>
+        </section>
 
-          <div className="max-w-3xl mx-auto relative z-10">
-            <h2 className="text-4xl md:text-7xl font-bold mb-8 leading-tight tracking-tight">
-              Take back control of your stack.
-            </h2>
-            <p className="text-white/80 text-xl mb-12 max-w-2xl mx-auto font-medium leading-relaxed">
-              No affiliate bias. No marketing fluff. Just honest, intelligent discovery.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/" className="group bg-white text-[#0066FF] px-10 py-5 text-lg font-bold flex items-center justify-center gap-2 hover:bg-gray-100 transition-all shadow-xl hover:translate-y-[-2px]">
-                Start Exploring <ArrowRight className="group-hover:translate-x-1 transition-transform"/>
-              </Link>
-              <Link href="https://chat.whatsapp.com/GVmP0Pz4ni5IU2znJ3Iibf?mode=hqrt3" target="_blank" className="px-10 py-5 text-lg font-bold text-white border-2 border-white/30 hover:bg-white/10 transition-colors">
-                Join Community
-              </Link>
+        {/* --- REAL ANSWERS (FAQ) --- */}
+        <section className="container mx-auto px-4 mb-32">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold mb-12 text-center">Real Answers</h2>
+            <div className="space-y-8">
+              <div className="p-8 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
+                <h3 className="font-bold text-xl text-white mb-3">Q: Why should I trust Currly?</h3>
+                <p className="text-gray-400 leading-relaxed">A: Because our incentives are aligned with yours. Most platforms earn affiliate commissions. We earn zero commissions. Our only incentive is accuracy—because if we lose your trust, we lose everything.</p>
+              </div>
+              <div className="p-8 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
+                <h3 className="font-bold text-xl text-white mb-3">Q: How do you make money?</h3>
+                <p className="text-gray-400 leading-relaxed">A: We don't yet. Future revenue will come from premium features (orchestration, analytics), but the discovery engine will always be free.</p>
+              </div>
+              <div className="p-8 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors">
+                <h3 className="font-bold text-xl text-white mb-3">Q: Can companies pay for rankings?</h3>
+                <p className="text-gray-400 leading-relaxed">A: No. We've already turned down sponsorship offers. Rankings are determined by quality, not payments.</p>
+              </div>
             </div>
           </div>
         </section>
+
+        {/* --- CTA --- */}
+        <section className="container mx-auto px-4 mb-24">
+          <div className="relative rounded-[2.5rem] bg-gradient-to-b from-[#0066FF] to-blue-900 overflow-hidden text-center px-6 py-24 md:py-32">
+            {/* Glow effects */}
+            <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+            
+            <div className="relative z-10 max-w-3xl mx-auto">
+              <h2 className="text-4xl md:text-6xl font-bold text-white mb-8 tracking-tight">
+                Take back control of <br/> your tech stack.
+              </h2>
+              <p className="text-blue-100 text-xl mb-12 font-medium">
+                No affiliate bias. No marketing fluff. Just honest discovery.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Link href="/" className="rounded-full bg-white text-[#0066FF] px-10 py-4 text-lg font-bold hover:scale-105 transition-transform shadow-xl flex items-center justify-center gap-2">
+                  Start Exploring <ArrowRight size={20}/>
+                </Link>
+                <a href="https://chat.whatsapp.com/GVmP0Pz4ni5IU2znJ3Iibf?mode=hqrt3" target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/30 bg-white/10 backdrop-blur-md px-10 py-4 text-lg font-bold text-white hover:bg-white/20 transition-colors">
+                  Join Community
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* --- FOOTER NOTE --- */}
+        <div className="text-center text-gray-600 text-sm pb-16">
+          <p>Currly — Built in August 2025. Updated every Sunday at 9 AM IST.</p>
+          <p className="mt-2">Honest forever. Free forever. For you forever.</p>
+          <a href="mailto:hello@currly.com" className="mt-4 inline-block hover:text-[#0066FF] transition-colors">hello@currly.com</a>
+        </div>
 
       </main>
     </div>
