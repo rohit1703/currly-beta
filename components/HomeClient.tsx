@@ -5,16 +5,16 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Search, ArrowRight, Code, PenTool, Globe, Zap, LayoutGrid } from 'lucide-react';
-import ToolCard from '@/components/ToolCardItem'; // Using your card component
+import ToolCard from '@/components/ToolCardItem';
 
-// Assuming these exist. If not, remove the imports and the components below.
+// RESTORED: Your original components
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
 import UserNav from '@/components/UserNav';
-import { useCountUp } from '@/hooks/useCountUp'; // If this hook is missing, remove the StatItem usage
+import { useCountUp } from '@/hooks/useCountUp';
 
 function StatItem({ value, label, suffix = "+" }: { value: number, label: string, suffix?: string }) {
-  // Simple fallback if hook is missing
+  const count = useCountUp(value);
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -23,14 +23,13 @@ function StatItem({ value, label, suffix = "+" }: { value: number, label: string
       className="bg-white dark:bg-neutral-900 p-8 rounded-3xl border border-gray-200 dark:border-white/10 shadow-sm text-center hover:shadow-md transition-all"
     >
       <div className="text-5xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-2 flex justify-center">
-        <span>{value}</span>{suffix}
+        <motion.span>{count}</motion.span>{suffix}
       </div>
       <div className="text-sm font-bold text-gray-500 uppercase tracking-wider">{label}</div>
     </motion.div>
   );
 }
 
-// Receive tools as a prop
 export default function HomeClient({ tools }: { tools: any[] }) {
   const [query, setQuery] = useState('');
   const [scrollY, setScrollY] = useState(0);
@@ -47,6 +46,14 @@ export default function HomeClient({ tools }: { tools: any[] }) {
     if (query.trim()) router.push(`/dashboard?q=${encodeURIComponent(query)}`);
   };
 
+  // NEW: Function to scroll to search instead of dumping all tools
+  const scrollToSearch = () => {
+    const element = document.getElementById('search-section');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const categories = [
     { name: "Marketing & SEO", icon: Zap, tools: "120+", slug: "marketing" },
     { name: "Development", icon: Code, tools: "85+", slug: "coding" },
@@ -57,20 +64,24 @@ export default function HomeClient({ tools }: { tools: any[] }) {
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-black text-gray-900 dark:text-white font-sans transition-colors duration-500 overflow-x-hidden">
       
-      {/* --- NAV --- */}
+      {/* --- NAV (RESTORED LOGIN, THEME, LOGO) --- */}
       <nav className={`fixed top-0 w-full z-50 px-6 py-4 transition-all ${scrollY > 50 ? 'bg-white/90 dark:bg-black/90 backdrop-blur-md shadow-sm' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link href="/">
-             {/* If Logo is missing, just use text */}
-            <span className="font-bold text-xl">Currly</span>
+             {/* FIXED: Restored your Logo Component */}
+            <Logo />
           </Link>
           <div className="flex items-center gap-4">
-             {/* Comment out if components are missing */}
-            {/* <ThemeToggle /> */}
-            {/* <UserNav /> */}
-            <Link href="/dashboard" className="bg-[#0066FF] hover:bg-[#0052CC] text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg shadow-blue-500/20">
+            {/* FIXED: Restored ThemeToggle and UserNav */}
+            <ThemeToggle />
+            <UserNav />
+            {/* FIXED: Get Started now scrolls to Search/Discovery instead of showing all tools */}
+            <button 
+              onClick={scrollToSearch}
+              className="bg-[#0066FF] hover:bg-[#0052CC] text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg shadow-blue-500/20"
+            >
               Get Started
-            </Link>
+            </button>
           </div>
         </div>
       </nav>
@@ -90,11 +101,12 @@ export default function HomeClient({ tools }: { tools: any[] }) {
         </h1>
 
         <p className="relative text-xl text-gray-500 dark:text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
+          Stop searching. Start building. <br className="hidden md:block"/>
           <span className="text-gray-900 dark:text-white font-bold">712+ tools</span> curated by experts.
         </p>
 
-        {/* SEARCH */}
-        <div className="relative max-w-3xl mx-auto mb-24 z-10">
+        {/* SEARCH (Added ID for scrolling) */}
+        <div id="search-section" className="relative max-w-3xl mx-auto mb-24 z-10">
           <form onSubmit={handleSearch} className="relative group">
             <div className="absolute -inset-1 bg-gradient-to-r from-[#0066FF] to-cyan-500 rounded-2xl opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
             <div className="relative flex items-center gap-4 bg-white dark:bg-[#111] rounded-2xl p-3 shadow-2xl border border-gray-200 dark:border-white/10">
@@ -111,9 +123,33 @@ export default function HomeClient({ tools }: { tools: any[] }) {
               </button>
             </div>
           </form>
+          <div className="flex flex-wrap justify-center gap-3 mt-6 text-sm">
+             <span className="text-gray-400 py-1">Trending:</span>
+             {['Video Editing', 'CRM', 'Chatbots'].map(t => (
+               <button key={t} onClick={() => setQuery(t)} className="px-3 py-1 rounded-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:text-[#0066FF] transition-colors text-gray-600 dark:text-gray-300">
+                 {t}
+               </button>
+             ))}
+          </div>
         </div>
 
-        {/* --- LIVE DATA GRID (Merged Here) --- */}
+        {/* DISCOVERY PREVIEW */}
+        <div className="relative z-10 mb-24">
+           <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-8">Explore by Category</p>
+           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {categories.map((cat, i) => (
+                <div key={i} onClick={() => router.push(`/dashboard?q=${cat.slug}`)} className="cursor-pointer bg-white dark:bg-[#111] p-6 rounded-2xl border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group text-left">
+                   <div className="w-10 h-10 bg-blue-50 dark:bg-white/5 rounded-lg flex items-center justify-center text-[#0066FF] mb-4 group-hover:scale-110 transition-transform">
+                     <cat.icon className="w-5 h-5" />
+                   </div>
+                   <h3 className="font-bold text-gray-900 dark:text-white">{cat.name}</h3>
+                   <p className="text-xs text-gray-500">{cat.tools} Tools</p>
+                </div>
+              ))}
+           </div>
+        </div>
+
+        {/* --- LIVE DATA GRID --- */}
         <div className="relative z-10 mb-24 text-left">
            <div className="flex items-center justify-between mb-8 px-4">
              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recently Added</h2>
