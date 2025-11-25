@@ -10,13 +10,13 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-white font-sans selection:bg-[#0066FF] selection:text-white overflow-x-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-[#F5F5F7] dark:bg-black text-black dark:text-white font-sans selection:bg-[#0066FF] selection:text-white overflow-x-hidden transition-colors duration-300">
       
       {/* --- LIGHTHOUSE BEAM EFFECT --- */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[#0066FF] opacity-5 dark:opacity-20 blur-[120px] rounded-full pointer-events-none z-0" />
 
       {/* --- NAV --- */}
-      <nav className="sticky top-0 z-50 border-b border-gray-200 dark:border-white/10 bg-white/80 dark:bg-black/50 backdrop-blur-xl px-6 py-5 transition-colors">
+      <nav className="sticky top-0 z-50 border-b border-gray-200 dark:border-white/10 bg-white/90 dark:bg-black/50 backdrop-blur-xl px-6 py-5 transition-colors">
         <div className="container mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to Home
@@ -31,50 +31,57 @@ export default function AboutPage() {
         
         {/* --- HERO --- */}
         <header className="container mx-auto px-4 py-24 md:py-40 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#0066FF]/30 bg-white dark:bg-[#0066FF]/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-[#0066FF] mb-8 shadow-sm dark:shadow-[0_0_20px_rgba(0,102,255,0.2)]">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white dark:bg-[#0066FF]/10 dark:border-[#0066FF]/30 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-[#0066FF] mb-8 shadow-sm">
             <Zap className="h-3 w-3" /> Est. August 2025
           </div>
           
-          <h1 className="text-5xl md:text-8xl font-bold leading-[1.1] mb-12 tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-5xl md:text-8xl font-bold leading-[1.1] mb-12 tracking-tight text-black dark:text-white">
             We built a lighthouse in a <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0066FF] to-blue-500">sea of AI tools.</span>
+            <span className="text-[#0066FF]">sea of AI tools.</span>
           </h1>
           
-          <div className="max-w-2xl mx-auto text-xl md:text-2xl leading-relaxed text-gray-700 dark:text-gray-400 font-medium">
+          <div className="max-w-2xl mx-auto text-xl md:text-2xl leading-relaxed text-gray-800 dark:text-gray-300 font-medium">
             <p>
               In a world where 10,000+ AI tools compete for your attention, finding the right one shouldn&apos;t feel like gambling.
             </p>
-            <p className="text-gray-900 dark:text-white mt-4 font-bold">
+            <p className="text-black dark:text-white mt-4 font-bold">
               Yet it does. Because discovery is broken.
             </p>
           </div>
         </header>
 
-        {/* --- THE PROBLEM --- */}
+        {/* --- THE PROBLEM (Fixed Visibility) --- */}
         <section className="container mx-auto px-4 mb-32">
           <div className="max-w-4xl mx-auto rounded-3xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-8 md:p-16 shadow-xl dark:shadow-none relative overflow-hidden">
             
-            <h2 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white relative z-10">The Problem We Saw</h2>
-            <div className="prose prose-lg dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed relative z-10">
-              <p className="text-xl font-semibold text-gray-900 dark:text-white mb-8 border-l-4 border-[#0066FF] pl-6 py-2 bg-blue-50 dark:bg-transparent rounded-r-lg">
-                &quot;You can&apos;t build honest discovery on dishonest economics.&quot;
-              </p>
+            <h2 className="text-3xl font-bold mb-8 text-black dark:text-white relative z-10">The Problem We Saw</h2>
+            
+            {/* Manual styling for perfect contrast */}
+            <div className="text-lg md:text-xl leading-relaxed space-y-8 relative z-10 text-gray-800 dark:text-gray-300">
+              <div className="border-l-4 border-[#0066FF] pl-6 py-2 bg-blue-50 dark:bg-transparent rounded-r-lg">
+                <p className="font-semibold text-black dark:text-white italic">
+                  &quot;You can&apos;t build honest discovery on dishonest economics.&quot;
+                </p>
+              </div>
+              
               <p>
                 August 2025. Two professionals, same frustration: Every search for AI tools led to the same dead ends. Listicles ranked by affiliate commissions. &quot;Reviews&quot; written by marketers who&apos;d never opened the product.
               </p>
+              
               <p>
-                The entire AI tools discovery ecosystem was built on a corrupted incentive: <strong>Get paid to recommend, regardless of whether it is right for the user.</strong>
+                The entire AI tools discovery ecosystem was built on a corrupted incentive: <strong className="font-bold text-black dark:text-white bg-yellow-100/50 dark:bg-transparent px-1 rounded">Get paid to recommend, regardless of whether it is right for the user.</strong>
               </p>
+              
               <p>
-                So we started over. Different incentives. Different architecture. Different truth. <strong>That is Currly.</strong>
+                So we started over. Different incentives. Different architecture. Different truth. <strong className="font-bold text-black dark:text-white border-b-2 border-[#0066FF]">That is Currly.</strong>
               </p>
             </div>
           </div>
         </section>
 
-        {/* --- NON-NEGOTIABLES --- */}
+        {/* --- NON-NEGOTIABLES (Grid) --- */}
         <section className="container mx-auto px-4 mb-32">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-gray-900 dark:text-white">Our Non-Negotiables</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-black dark:text-white">Our Non-Negotiables</h2>
           <div className="grid md:grid-cols-2 gap-6">
             {[
               {
@@ -115,18 +122,18 @@ export default function AboutPage() {
                   <item.icon className={`h-24 w-24 ${item.color}`} />
                 </div>
                 <item.icon className={`h-10 w-10 mb-6 ${item.color}`} />
-                <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{item.title}</h3>
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{item.desc}</p>
+                <h3 className="text-2xl font-bold mb-4 text-black dark:text-white">{item.title}</h3>
+                <p className="text-gray-700 dark:text-gray-400 leading-relaxed font-medium">{item.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* --- FOUNDERS --- */}
+        {/* --- FOUNDERS (Side by Side) --- */}
         <section className="container mx-auto px-4 mb-32">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 dark:text-white">The Humans Behind Currly</h2>
-            <p className="text-gray-500 dark:text-gray-400 mt-4">Two founders. One mission.</p>
+            <h2 className="text-4xl font-bold text-black dark:text-white">The Humans Behind Currly</h2>
+            <p className="text-gray-600 dark:text-gray-400 mt-4 font-medium">Two founders. One mission.</p>
           </div>
 
           <div className="max-w-5xl mx-auto rounded-[2rem] border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden shadow-2xl dark:shadow-none">
@@ -145,11 +152,11 @@ export default function AboutPage() {
                 {/* Rohit */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Rohit Bangaram</h3>
+                    <h3 className="text-2xl font-bold text-black dark:text-white">Rohit Bangaram</h3>
                     <a href="#" className="text-gray-400 hover:text-[#0066FF]"><Linkedin size={20}/></a>
                   </div>
                   <p className="text-xs font-bold text-[#0066FF] uppercase tracking-wider mb-4">Co-founder, Currly</p>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed font-medium">
                     The engineer who thinks like a researcher. Rohit builds the intelligence layer—the extraction engine and semantic search pipeline that never breaks. He believes great products are built on systems &gt; features.
                   </p>
                 </div>
@@ -157,11 +164,11 @@ export default function AboutPage() {
                 {/* Ashish */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Ashish Singh</h3>
+                    <h3 className="text-2xl font-bold text-black dark:text-white">Ashish Singh</h3>
                     <a href="#" className="text-gray-400 hover:text-[#0066FF]"><Linkedin size={20}/></a>
                   </div>
                   <p className="text-xs font-bold text-[#0066FF] uppercase tracking-wider mb-4">Co-founder, Currly</p>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                  <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed font-medium">
                     The strategist who thinks like a storyteller. Ashish shapes Currly&apos;s positioning and principles. He believes trust isn&apos;t marketed—it&apos;s earned through consistent truth.
                   </p>
                 </div>
@@ -170,17 +177,17 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* --- VISION --- */}
+        {/* --- VISION (3 Stages) --- */}
         <section className="container mx-auto px-4 mb-32">
-           <h2 className="text-3xl font-bold text-center mb-16 text-gray-900 dark:text-white">The Three-Stage Vision</h2>
+           <h2 className="text-3xl font-bold text-center mb-16 text-black dark:text-white">The Three-Stage Vision</h2>
            <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-4">
              
              {/* Stage 1 */}
-             <div className="p-8 rounded-2xl bg-[#0066FF] text-white border border-[#0066FF] shadow-[0_0_30px_rgba(0,102,255,0.3)] relative overflow-hidden">
+             <div className="p-8 rounded-2xl bg-[#0066FF] text-white border border-[#0066FF] shadow-lg shadow-blue-500/20 relative overflow-hidden">
                <div className="absolute top-0 right-0 p-4 opacity-20"><CheckCircle2 size={40}/></div>
                <div className="text-xs font-bold uppercase tracking-wider mb-2 opacity-80">Stage 1: Live Now</div>
                <h3 className="text-2xl font-bold mb-2">Discovery</h3>
-               <p className="text-white/80 text-sm">Semantic search. Honest validation. Weekly updates. Where trust begins.</p>
+               <p className="text-white/90 text-sm font-medium">Semantic search. Honest validation. Weekly updates. Where trust begins.</p>
              </div>
 
              {/* Stage 2 */}
@@ -209,30 +216,28 @@ export default function AboutPage() {
               { num: "16+", label: "Categories" },
             ].map((stat, i) => (
               <div key={i} className="bg-white dark:bg-[#0A0A0A] p-10 text-center hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                <div className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2">{stat.num}</div>
+                <div className="text-4xl md:text-5xl font-bold text-black dark:text-white mb-2">{stat.num}</div>
                 <div className="text-sm text-gray-500 uppercase tracking-wider font-bold">{stat.label}</div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* --- REAL ANSWERS --- */}
+        {/* --- REAL ANSWERS (FAQ) --- */}
         <section className="container mx-auto px-4 mb-32">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold mb-12 text-gray-900 dark:text-white">Real Answers</h2>
-            <div className="space-y-8">
-              <div className="p-8 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-blue-200 dark:hover:bg-white/10 transition-colors shadow-sm dark:shadow-none">
-                <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-3">Q: Why should I trust Currly?</h3>
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">A: Because our incentives are aligned with yours. Most platforms earn affiliate commissions. We earn zero commissions. Our only incentive is accuracy—because if we lose your trust, we lose everything.</p>
-              </div>
-              <div className="p-8 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-blue-200 dark:hover:bg-white/10 transition-colors shadow-sm dark:shadow-none">
-                <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-3">Q: How do you make money?</h3>
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">A: We don&apos;t yet. Future revenue will come from premium features (orchestration, analytics), but the discovery engine will always be free.</p>
-              </div>
-              <div className="p-8 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-blue-200 dark:hover:bg-white/10 transition-colors shadow-sm dark:shadow-none">
-                <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-3">Q: Can companies pay for rankings?</h3>
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">A: No. We&apos;ve already turned down sponsorship offers. Rankings are determined by quality, not payments.</p>
-              </div>
+            <h2 className="text-3xl font-bold mb-12 text-black dark:text-white">Real Answers</h2>
+            <div className="space-y-6">
+              {[
+                { q: "Why should I trust Currly?", a: "Because our incentives are aligned with yours. Most platforms earn affiliate commissions. We earn zero commissions. Our only incentive is accuracy—because if we lose your trust, we lose everything." },
+                { q: "How do you make money?", a: "We don't yet. Future revenue will come from premium features (orchestration, analytics), but the discovery engine will always be free." },
+                { q: "Can companies pay for rankings?", a: "No. We've already turned down sponsorship offers. Rankings are determined by quality, not payments." }
+              ].map((item, i) => (
+                <div key={i} className="p-8 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 hover:border-[#0066FF]/50 transition-colors shadow-sm hover:shadow-md">
+                  <h3 className="font-bold text-xl text-black dark:text-white mb-3">Q: {item.q}</h3>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-medium">A: {item.a}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -261,13 +266,6 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
-
-        {/* --- FOOTER NOTE --- */}
-        <div className="text-center text-gray-500 dark:text-gray-600 text-sm pb-16">
-          <p>Currly — Built in August 2025. Updated every Sunday at 9 AM IST.</p>
-          <p className="mt-2">Honest forever. Free forever. For you forever.</p>
-          <a href="mailto:hello@currly.com" className="mt-4 inline-block hover:text-[#0066FF] transition-colors">hello@currly.com</a>
-        </div>
 
       </main>
     </div>
