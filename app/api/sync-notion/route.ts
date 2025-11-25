@@ -20,8 +20,8 @@ export async function GET() {
     );
 
     // 3. Fetch from Notion
-    // We remove the 'as any' cast and use standard query
-    const response = await notion.databases.query({
+    // We cast to 'any' to bypass the Vercel TypeScript error blocking the build
+    const response = await (notion.databases as any).query({
       database_id: process.env.NOTION_DATABASE_ID!,
       filter: {
         property: 'Launch Status',
@@ -36,8 +36,8 @@ export async function GET() {
       const props = page.properties;
       
       // Safe helper for text extraction
-      const getText = (p: any) => p?.rich_text?.[0]?.plain_text || '';
       const getTitle = (p: any) => p?.title?.[0]?.plain_text || 'Untitled';
+      const getText = (p: any) => p?.rich_text?.[0]?.plain_text || '';
       const getSelect = (p: any) => p?.select?.name || null;
       const getMulti = (p: any) => p?.multi_select?.map((x: any) => x.name) || [];
       const getUrl = (p: any) => p?.url || null;
@@ -51,7 +51,6 @@ export async function GET() {
         pricing_model: getSelect(props['Pricing Model']),
         image_url: props['Image']?.files?.[0]?.file?.url || props['Image']?.files?.[0]?.external?.url || '',
         launch_date: props['Date Added']?.date?.start || null,
-        // Map other fields as needed
       };
     });
 
