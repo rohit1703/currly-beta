@@ -12,7 +12,8 @@ const supabase = createClient(
 export async function GET() {
   try {
     // 2. Fetch Data from Notion
-    const notionResponse = await notion.databases.query({
+    // Casting to 'any' to bypass Vercel TypeScript error
+const notionResponse = await (notion.databases as any).query({
       database_id: process.env.NOTION_DATABASE_ID!,
       filter: {
         property: 'Launch Status', // Ensuring we only show active tools
