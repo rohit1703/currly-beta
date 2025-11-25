@@ -11,9 +11,13 @@ import { Logo } from '@/components/Logo';
 import UserNav from '@/components/UserNav';
 import { useCountUp } from '@/hooks/useCountUp';
 
-// IMPORTING THE NEW SECTIONS
-import { Testimonials } from '@/components/Testimonials';
-import { Footer } from '@/components/Footer';
+/// OLD
+// import { Testimonials } from '@/components/Testimonials';
+// import { Footer } from '@/components/Footer';
+
+// NEW (Updated filenames)
+import { Testimonials } from '@/components/TestimonialsSection';
+import { Footer } from '@/components/FooterSection';
 
 function StatItem({ value, label, suffix = "+" }: { value: number, label: string, suffix?: string }) {
   const count = useCountUp(value);
