@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { Search, Sparkles, ArrowRight } from 'lucide-react';
 
 export default async function Home() {
- // 1. Initialize Supabase Client (Server Side)
-  const cookieStore = await cookies(); // <--- ADD await HERE
+  // 1. Initialize Supabase Client (Server Side)
+  const cookieStore = cookies();
   const supabase = createClient(cookieStore);
 
   // 2. Fetch Tools from DB
