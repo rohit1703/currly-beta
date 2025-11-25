@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Shield, Users, Zap, Search, Clock, Linkedin, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle'; // Bringing in the toggle
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const metadata: Metadata = {
   title: "About Currly - The Honest AI Tools Discovery Platform",
@@ -127,13 +127,12 @@ export default function AboutPage() {
 
           <div className="max-w-5xl mx-auto rounded-[2rem] border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 overflow-hidden shadow-2xl dark:shadow-none">
             <div className="grid md:grid-cols-2">
-              {/* Image Side - Adjusted object-position to prevent cropping heads */}
+              {/* Image Side - Replaced <Image> with standard <img> to fix build error */}
               <div className="relative h-[400px] md:h-auto border-b md:border-b-0 md:border-r border-gray-200 dark:border-white/10">
-                 <Image 
+                 <img 
                    src="/founders.jpg" 
                    alt="Rohit and Ashish" 
-                   fill
-                   className="object-cover object-top grayscale hover:grayscale-0 transition-all duration-700"
+                   className="absolute inset-0 w-full h-full object-cover object-top grayscale hover:grayscale-0 transition-all duration-700"
                  />
               </div>
 
