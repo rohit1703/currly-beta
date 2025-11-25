@@ -365,12 +365,6 @@ export default function AboutClient() {
           </div>
         </motion.section>
 
-        <div className="text-center text-gray-500 dark:text-gray-600 text-sm pb-16">
-          <p>Currly — Built in August 2025. Updated every Sunday at 9 AM IST.</p>
-          <p className="mt-2">Honest forever. Free forever. For you forever.</p>
-          <a href="mailto:hello@currly.com" className="mt-4 inline-block hover:text-[#0066FF] transition-colors">hello@currly.com</a>
-        </div>
-
       </main>
     </div>
   );
