@@ -2,36 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    /* ... other standard vars ... */
-  }
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    /* ... other standard vars ... */
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
   }
 }
 
+/* AUTOMATICALLY APPLY FONTS */
 @layer base {
-  * {
-    @apply border-border;
+  /* Default body text uses Manrope (via Tailwind 'font-sans' config) */
+  html {
+    @apply font-sans;
   }
-  body {
-    @apply bg-background text-foreground;
+
+  /* Force all Headings to use Bodoni Moda */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+  
+  /* Optional: Make H1s extra tight for that editorial look */
+  h1 {
+    @apply tracking-tighter;
   }
 }
 
-/* Ensure these animations are present */
-.animate-scroll {
-  animation: scroll-left 40s linear infinite;
-}
-.animate-scroll:hover {
-  animation-play-state: paused;
-}
-@keyframes scroll-left {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+/* Custom Utilities */
+.mask-linear-fade {
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }
