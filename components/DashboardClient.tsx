@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link'; // <--- THIS WAS MISSING
-import { Search, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, Clock, Loader2, Globe, Sparkles, LayoutGrid } from 'lucide-react';
+import Link from 'next/link';
+// FIX: Added missing icons (Code, PenTool, BarChart3, MessageSquare, Edit) to imports
+import { Search, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, Clock, Loader2, Globe, Sparkles, LayoutGrid, Code, PenTool, BarChart3, MessageSquare, Edit } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import UserNav from '@/components/UserNav';
@@ -279,15 +280,14 @@ export default function DashboardClient({
                     { name: "Development", icon: Code, count: "85+" },
                     { name: "Design", icon: PenTool, count: "94+" },
                     { name: "Productivity", icon: LayoutGrid, count: "200+" },
-                    { name: "Analytics", icon: Globe, count: "45+" },
-                    { name: "Chatbots", icon: Globe, count: "60+" },
-                    { name: "Writing", icon: Globe, count: "70+" },
+                    { name: "Analytics", icon: BarChart3, count: "45+" },
+                    { name: "Chatbots", icon: MessageSquare, count: "60+" },
+                    { name: "Writing", icon: Edit, count: "70+" },
                     { name: "Video", icon: Globe, count: "50+" },
                   ].map((cat, i) => (
                     <button
                       key={i}
                       onClick={() => {
-                         // Just switch tab and filter, no page reload needed
                          setCategoryFilter(cat.name);
                          setActiveTab('search'); 
                       }}
