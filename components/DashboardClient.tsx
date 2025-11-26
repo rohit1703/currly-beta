@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link'; // <--- ADDED THIS MISSING IMPORT
-import { Search, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, Clock, Loader2, Globe, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { Search, CheckSquare, Square, X, ArrowRight, Zap, MapPin, Clock, Loader2, Globe, Sparkles, LayoutGrid } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import UserNav from '@/components/UserNav';
@@ -45,13 +45,12 @@ export default function DashboardClient({
     }
   }, [isSearching]);
 
-  // Stop loading when new data arrives (initialTools changes)
+  // Stop loading when new data arrives
   useEffect(() => {
     setIsSearching(false);
   }, [initialTools]);
 
   const handleSearchSubmit = () => {
-    // Trigger visual loading
     setIsSearching(true);
   };
 
@@ -95,6 +94,7 @@ export default function DashboardClient({
     }
   };
 
+  // REUSABLE SIDEBAR CONTENT
   const SidebarContent = () => (
     <div className="space-y-8">
       <div>
@@ -142,6 +142,7 @@ export default function DashboardClient({
   return (
     <div className="flex h-screen bg-[#F5F5F7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans transition-colors duration-500">
       
+      {/* DESKTOP SIDEBAR */}
       <aside className="w-72 border-r border-gray-200/50 dark:border-white/10 p-6 flex flex-col gap-8 hidden md:flex bg-white/50 dark:bg-[#0A0A0A] backdrop-blur-xl overflow-y-auto">
         <Link href="/">
           <Logo />
@@ -149,52 +150,96 @@ export default function DashboardClient({
         <SidebarContent />
       </aside>
 
+      {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col min-w-0 relative bg-[#F5F5F7] dark:bg-[#050505]">
         
-        <header className="h-20 md:h-24 border-b border-gray-200/50 dark:border-white/10 flex items-center justify-between px-4 md:px-10 gap-4 bg-white/60 dark:bg-[#050505]/80 backdrop-blur-xl z-10 sticky top-0">
-          <div className="md:hidden"><MobileMenu><SidebarContent /></MobileMenu></div>
-          <div className="flex items-center gap-4 flex-1 max-w-3xl bg-white dark:bg-[#111] p-2 md:p-3 rounded-2xl border border-gray-200 dark:border-white/10 focus-within:border-[#0066FF]/50 focus-within:shadow-lg transition-all shadow-sm">
-            <Search className="w-5 h-5 text-gray-400 ml-2" />
-            <form action="/dashboard" onSubmit={handleSearchSubmit} className="w-full">
-                <input 
-                name="q"
-                type="text" 
-                placeholder="Search for 'video editor'..." 
-                defaultValue={searchQuery}
-                className="bg-transparent border-none outline-none text-base md:text-lg text-[#1A1A1A] dark:text-white w-full placeholder-gray-400 h-full"
-                />
-            </form>
-          </div>
-          <div className="flex items-center gap-2 md:gap-4">
-             <ThemeToggle />
-             <UserNav />
+        {/* HEADER (Merged Mobile Menu + Search Tabs) */}
+        <header className="border-b border-gray-200/50 dark:border-white/10 bg-white/60 dark:bg-[#050505]/80 backdrop-blur-xl z-10 sticky top-0">
+          <div className="px-4 md:px-10 py-4">
+            <div className="flex items-center justify-between mb-4">
+               {/* Mobile Menu Trigger */}
+               <div className="md:hidden"><MobileMenu><SidebarContent /></MobileMenu></div>
+               
+               <div className="flex items-center gap-4 ml-auto">
+                  <ThemeToggle />
+                  <UserNav />
+               </div>
+            </div>
+
+            {/* SEARCH TABS */}
+            <div className="flex justify-center gap-6 mb-4 text-sm font-medium">
+               <button 
+                 onClick={() => setActiveTab('search')}
+                 className={`pb-2 border-b-2 transition-colors ${activeTab === 'search' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
+               >
+                 <Search className="w-4 h-4 inline mr-2" /> Search Tools
+               </button>
+               <button 
+                 onClick={() => setActiveTab('browse')}
+                 className={`pb-2 border-b-2 transition-colors ${activeTab === 'browse' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
+               >
+                 <LayoutGrid className="w-4 h-4 inline mr-2" /> Browse Categories
+               </button>
+            </div>
+
+            {/* SEARCH INPUT (with Animation) */}
+            {activeTab === 'search' && (
+              <div className="max-w-2xl mx-auto relative">
+                 <form action="/dashboard" onSubmit={handleSearchSubmit} className="relative">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[#0066FF] to-cyan-500 rounded-full opacity-20 blur"></div>
+                    <div className="relative flex items-center bg-white dark:bg-[#111] rounded-full shadow-lg p-1 pl-5">
+                       <Search className="w-5 h-5 text-gray-400 mr-3" />
+                       <input 
+                         name="q"
+                         type="text" 
+                         defaultValue={searchQuery}
+                         placeholder="Describe your problem (e.g. 'I need to automate invoices')..."
+                         className="flex-1 bg-transparent border-none outline-none text-base text-[#1A1A1A] dark:text-white placeholder-gray-400 h-12"
+                       />
+                       <button type="submit" className="bg-[#0066FF] hover:bg-[#0052CC] text-white px-6 py-2.5 rounded-full font-bold transition-all">
+                         Search
+                       </button>
+                    </div>
+                 </form>
+                 
+                 {/* Loading Animation */}
+                 <AnimatePresence>
+                   {isSearching && (
+                     <motion.div 
+                       initial={{ opacity: 0, y: 10 }} 
+                       animate={{ opacity: 1, y: 0 }} 
+                       exit={{ opacity: 0 }}
+                       className="absolute top-full left-0 w-full mt-4 flex justify-center"
+                     >
+                        <div className="bg-black/80 text-white px-4 py-2 rounded-full flex items-center gap-3 backdrop-blur-md text-sm font-medium shadow-xl">
+                           <Loader2 className="w-4 h-4 animate-spin text-[#0066FF]" />
+                           <motion.span
+                             key={loadingStep}
+                             initial={{ opacity: 0, y: 5 }}
+                             animate={{ opacity: 1, y: 0 }}
+                             exit={{ opacity: 0, y: -5 }}
+                           >
+                             {loadingTexts[loadingStep]}
+                           </motion.span>
+                        </div>
+                     </motion.div>
+                   )}
+                 </AnimatePresence>
+              </div>
+            )}
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-10 scroll-smooth">
           
-          {isSearching && (
-             <div className="mb-12 flex justify-center py-20">
-                <div className="bg-black/80 text-white px-6 py-3 rounded-full flex items-center gap-3 backdrop-blur-md text-base font-medium shadow-xl">
-                   <Loader2 className="w-5 h-5 animate-spin text-[#0066FF]" />
-                   <motion.span
-                     key={loadingStep}
-                     initial={{ opacity: 0, y: 5 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     exit={{ opacity: 0, y: -5 }}
-                   >
-                     {loadingTexts[loadingStep]}
-                   </motion.span>
-                </div>
-             </div>
-          )}
-
+          {/* AI SUMMARY */}
           {!isSearching && searchQuery && (
              <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
                <AISearchSummary query={searchQuery} tools={filteredTools} />
              </div>
           )}
 
+          {/* RESULTS */}
           {!isSearching && (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-32">
               {filteredTools.map((tool) => {
@@ -224,14 +269,6 @@ export default function DashboardClient({
                   );
               })}
             </div>
-          )}
-
-          {compareList.length > 0 && (
-             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#1A1A1A] text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-10 border border-white/10 w-[90%] md:w-auto justify-between md:justify-start">
-                <span className="font-bold text-sm">{compareList.length} Selected</span>
-                <button className="text-sm font-bold hover:text-[#0066FF]">Compare Now</button>
-                <button onClick={() => setCompareList([])}><X className="w-4 h-4" /></button>
-             </div>
           )}
         </div>
         <AdoptionModal isOpen={isAdoptionOpen} onClose={() => setIsAdoptionOpen(false)} toolName={selectedTool?.name} demoUrl={selectedTool?.demo_video_url} />
