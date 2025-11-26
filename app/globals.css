@@ -16,25 +16,6 @@
   }
 }
 
-/* AUTOMATICALLY APPLY FONTS */
-@layer base {
-  /* Default body text uses Manrope (via Tailwind 'font-sans' default) */
-  html {
-    @apply font-sans text-gray-900 dark:text-white;
-  }
-
-  /* FIX: Use standard CSS for headings to prevent build errors */
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-bodoni), serif;
-    @apply tracking-tight font-bold;
-  }
-  
-  /* Make H1s extra tight for that editorial look */
-  h1 {
-    @apply tracking-tighter;
-  }
-}
-
 /* Custom Utilities */
 .mask-linear-fade {
   mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
