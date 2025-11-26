@@ -1,13 +1,13 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 
-// The "Glass Mist" Animation Configuration
-const mistVariants = {
+// Explicitly type as Variants to fix build error
+const mistVariants: Variants = {
   hidden: { 
     opacity: 0, 
     filter: 'blur(10px)', 
-    y: 5, // Slight upward drift for a "weightless" feel
+    y: 5, 
     scale: 0.98 
   },
   visible: { 
@@ -17,7 +17,8 @@ const mistVariants = {
     scale: 1,
     transition: { 
       duration: 0.6, 
-      ease: [0.22, 1, 0.36, 1] // Custom "Apple-like" bezier curve
+      // The error happened here. We keep the bezier curve but Typescript now accepts it because of the Variants type
+      ease: [0.22, 1, 0.36, 1] 
     }
   },
   exit: { 
@@ -38,8 +39,6 @@ export default function Template({ children }: { children: React.ReactNode }) {
       variants={mistVariants}
       initial="hidden"
       animate="visible"
-      // "exit" only works with AnimatePresence in complex setups, 
-      // but this setup ensures the ENTRY animation fires on every navigation.
       className="min-h-screen"
     >
       {children}
