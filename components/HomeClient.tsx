@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion, Variants } from 'framer-motion'; // Added Variants for type safety
+import { motion, Variants } from 'framer-motion';
 import { Search, ArrowRight, Code, PenTool, Globe, Zap, LayoutGrid } from 'lucide-react';
 import ToolCard from '@/components/ToolCardItem';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -13,9 +13,9 @@ import { useCountUp } from '@/hooks/useCountUp';
 import { Testimonials } from '@/components/TestimonialsSection';
 import { Footer } from '@/components/FooterSection';
 
-// --- ANIMATION VARIANTS (Premium Feel) ---
+// --- ANIMATION VARIANTS (Option B: Micro Lift) ---
 const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 15 }, // Reduced from 30 to 15 for a tighter, premium feel
   visible: { 
     opacity: 1, 
     y: 0, 
@@ -29,13 +29,13 @@ const staggerContainer: Variants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.1,
-      delayChildren: 0.2
+      delayChildren: 0.1 // Faster start
     }
   }
 };
 
 const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
+  hidden: { opacity: 0, scale: 0.98 }, // Subtle scale
   visible: { 
     opacity: 1, 
     scale: 1, 
@@ -90,10 +90,13 @@ export default function HomeClient({ tools }: { tools: any[] }) {
     { name: "Productivity", icon: LayoutGrid, tools: "200+", slug: "productivity" },
   ];
 
+  // Check if we have tools to show
+  const hasTools = tools && tools.length > 0;
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-black text-gray-900 dark:text-white font-sans transition-colors duration-500 overflow-x-hidden">
       
-      {/* --- AMBIENT GLOW (The "Lighthouse" Feel) --- */}
+      {/* --- AMBIENT GLOW --- */}
       <motion.div 
         animate={{ opacity: [0.05, 0.1, 0.05], scale: [1, 1.05, 1] }}
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
@@ -223,40 +226,43 @@ export default function HomeClient({ tools }: { tools: any[] }) {
            <StatItem value={15} label="Categories" />
         </motion.div>
 
-        {/* LIVE DATA GRID */}
-        <div className="max-w-7xl mx-auto px-4 relative z-10 mb-24 text-left">
-           <motion.div 
-             initial={{ opacity: 0 }} 
-             whileInView={{ opacity: 1 }} 
-             viewport={{ once: true }}
-             className="flex items-center justify-between mb-8"
-           >
-             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recently Added</h2>
-             <span className="text-sm text-gray-500">{tools?.length || 0} tools indexed</span>
-           </motion.div>
-           
-           <motion.div 
-             variants={staggerContainer}
-             initial="hidden"
-             whileInView="visible"
-             viewport={{ once: true, margin: "100px" }} // Pre-load a bit earlier
-             className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-           >
-            {tools?.map((tool, i) => (
-              <motion.div key={tool.id} variants={fadeInUp}>
-                <ToolCard 
-                  title={tool.name || 'Untitled'}
-                  description={tool.description || ''}
-                  category={tool.main_category || 'General'}
-                  pricing={tool.pricing_model || 'Unknown'} 
-                  image={tool.image_url || ''}
-                  url={tool.website || '#'}
-                  slug={tool.slug}
-                />
-              </motion.div>
-            ))}
-           </motion.div>
-        </div>
+        {/* LIVE DATA GRID - Hidden if 0 tools */}
+        {hasTools && (
+          <div className="max-w-7xl mx-auto px-4 relative z-10 mb-24 text-left">
+             <motion.div 
+               initial={{ opacity: 0 }} 
+               whileInView={{ opacity: 1 }} 
+               viewport={{ once: true }}
+               className="flex items-center justify-between mb-8"
+             >
+               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recently Added</h2>
+               {/* Hiding the '0 tools indexed' text if for some reason it appears incorrectly */}
+               <span className="text-sm text-gray-500">{tools.length} tools indexed</span>
+             </motion.div>
+             
+             <motion.div 
+               variants={staggerContainer}
+               initial="hidden"
+               whileInView="visible"
+               viewport={{ once: true, margin: "100px" }}
+               className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+             >
+              {tools.map((tool, i) => (
+                <motion.div key={tool.id} variants={fadeInUp}>
+                  <ToolCard 
+                    title={tool.name || 'Untitled'}
+                    description={tool.description || ''}
+                    category={tool.main_category || 'General'}
+                    pricing={tool.pricing_model || 'Unknown'} 
+                    image={tool.image_url || ''}
+                    url={tool.website || '#'}
+                    slug={tool.slug}
+                  />
+                </motion.div>
+              ))}
+             </motion.div>
+          </div>
+        )}
 
         {/* TESTIMONIALS */}
         <Testimonials />

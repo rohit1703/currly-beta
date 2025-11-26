@@ -5,7 +5,7 @@ import { Twitter, Linkedin, Github, Mail } from 'lucide-react';
 const footerLinks = {
   Company: [
     { label: 'About Us', href: '/about' },
-    { label: 'Community', href: '/community' },
+    // Removed Community link as requested
     { label: 'Contact', href: 'mailto:founders@currly.ai' },
   ],
   Legal: [
@@ -65,9 +65,9 @@ export function Footer() {
         <div className="mt-16 pt-8 border-t border-gray-200 dark:border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
           <p>© 2025 Currly. All rights reserved.</p>
           <div className="flex items-center gap-1">
-            <span>Discover</span>
-            <span className="text-red-500">&</span>
-            <span>build with Currly</span>
+            <span>Made with</span>
+            <span className="text-red-500">❤️</span>
+            <span>for founders</span>
           </div>
         </div>
       </div>
