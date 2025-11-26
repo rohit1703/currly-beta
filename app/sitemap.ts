@@ -1,29 +1,40 @@
 import { MetadataRoute } from 'next';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase Client (Admin access not needed for just reading slugs)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://currly-beta.vercel.app'; // Update this to your real domain later
+  // 1. Define your Base URL (Change this to your actual domain when you buy one)
+  const baseUrl = 'https://currly-beta.vercel.app'; 
 
-  // 1. Fetch all tools from DB
+  // 2. Initialize Supabase
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  // 3. Fetch ALL Tools (Slug and Update Time)
   const { data: tools } = await supabase
     .from('tools')
-    .select('slug, updated_at');
+    .select('slug, launch_date')
+    // .eq('launch_status', 'Live') // Uncomment if you have a status column
+    .order('launch_date', { ascending: false });
 
-  // 2. Map tools to sitemap format
+  // 4. Generate Tool URLs
   const toolUrls = (tools || []).map((tool) => ({
     url: `${baseUrl}/tool/${tool.slug}`,
-    lastModified: new Date(tool.updated_at || new Date()),
+    lastModified: new Date(tool.launch_date || new Date()),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }));
 
-  // 3. Add your static pages (Home, Login, Feed)
+  // 5. Generate Category URLs (Static list for now, or fetch from DB)
+  const categories = ['marketing', 'coding', 'video', 'productivity', 'design', 'writing'];
+  const categoryUrls = categories.map((cat) => ({
+    url: `${baseUrl}/category/${cat}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.9,
+  }));
+
+  // 6. Static Pages
   const staticRoutes = [
     {
       url: baseUrl,
@@ -32,18 +43,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${baseUrl}/login`,
+      url: `${baseUrl}/about`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/feed`,
-      lastModified: new Date(),
-      changeFrequency: 'daily' as const,
-      priority: 0.9,
+      priority: 0.7,
     },
   ];
 
-  return [...staticRoutes, ...toolUrls];
+  return [...staticRoutes, ...categoryUrls, ...toolUrls];
 }

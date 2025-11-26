@@ -1,0 +1,14 @@
+import { MetadataRoute } from 'next';
+
+export default function robots(): MetadataRoute.Robots {
+  const baseUrl = 'https://currly-beta.vercel.app'; 
+
+  return {
+    rules: {
+      userAgent: '*',
+      allow: '/',
+      disallow: '/api/', // Don't index your API routes
+    },
+    sitemap: `${baseUrl}/sitemap.xml`,
+  };
+}
