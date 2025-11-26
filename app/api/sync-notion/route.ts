@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 
-export const maxDuration = 300; // 5 minutes timeout
+export const maxDuration = 300; // Request 5-minute timeout
 
 export async function GET() {
   const NOTION_KEY = process.env.NOTION_SECRET_KEY;
@@ -27,7 +27,6 @@ export async function GET() {
     console.log("Starting Notion Fetch...");
     
     while (hasMore) {
-      // RENAMED variable from 'response' to 'notionRes' to fix TypeScript build error
       const notionRes = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
         method: 'POST',
         headers: {
@@ -50,7 +49,7 @@ export async function GET() {
       const data = await notionRes.json();
       allTools = [...allTools, ...data.results];
       hasMore = data.has_more;
-      startCursor = data.next_cursor ?? undefined; // Ensure explicit undefined if null
+      startCursor = data.next_cursor ?? undefined;
       
       console.log(`Fetched ${allTools.length} tools so far...`);
     }
@@ -61,7 +60,7 @@ export async function GET() {
 
     // 2. Process & Embed in Batches
     const BATCH_SIZE = 10;
-    const processedTools = [];
+    const processedTools: any[] = [];
 
     for (let i = 0; i < allTools.length; i += BATCH_SIZE) {
       const batch = allTools.slice(i, i + BATCH_SIZE);
@@ -106,4 +105,33 @@ export async function GET() {
       });
 
       const results = await Promise.all(batchPromises);
-      processedTools
+      // Filter out nulls and push to main array
+      const validResults = results.filter(t => t !== null);
+      processedTools.push(...validResults);
+      
+      console.log(`Processed ${Math.min(i + BATCH_SIZE, allTools.length)}/${allTools.length}`);
+    }
+
+    // 3. Upsert to Supabase
+    if (processedTools.length > 0) {
+      for (let i = 0; i < processedTools.length; i += 50) {
+        const chunk = processedTools.slice(i, i + 50);
+        const { error } = await supabase
+          .from('tools')
+          .upsert(chunk, { onConflict: 'notion_id' });
+        
+        if (error) throw error;
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      count: processedTools.length,
+      message: `Synced & Embedded ${processedTools.length} tools.`
+    });
+
+  } catch (error: any) {
+    console.error('Sync failed:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
