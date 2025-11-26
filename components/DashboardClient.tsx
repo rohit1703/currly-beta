@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link'; // <--- ADDED THIS MISSING IMPORT
 import { Search, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, Clock, Loader2, Globe, Sparkles } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -140,6 +141,7 @@ export default function DashboardClient({
 
   return (
     <div className="flex h-screen bg-[#F5F5F7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans transition-colors duration-500">
+      
       <aside className="w-72 border-r border-gray-200/50 dark:border-white/10 p-6 flex flex-col gap-8 hidden md:flex bg-white/50 dark:bg-[#0A0A0A] backdrop-blur-xl overflow-y-auto">
         <Link href="/">
           <Logo />
@@ -148,6 +150,7 @@ export default function DashboardClient({
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 relative bg-[#F5F5F7] dark:bg-[#050505]">
+        
         <header className="h-20 md:h-24 border-b border-gray-200/50 dark:border-white/10 flex items-center justify-between px-4 md:px-10 gap-4 bg-white/60 dark:bg-[#050505]/80 backdrop-blur-xl z-10 sticky top-0">
           <div className="md:hidden"><MobileMenu><SidebarContent /></MobileMenu></div>
           <div className="flex items-center gap-4 flex-1 max-w-3xl bg-white dark:bg-[#111] p-2 md:p-3 rounded-2xl border border-gray-200 dark:border-white/10 focus-within:border-[#0066FF]/50 focus-within:shadow-lg transition-all shadow-sm">
@@ -169,6 +172,7 @@ export default function DashboardClient({
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-10 scroll-smooth">
+          
           {isSearching && (
              <div className="mb-12 flex justify-center py-20">
                 <div className="bg-black/80 text-white px-6 py-3 rounded-full flex items-center gap-3 backdrop-blur-md text-base font-medium shadow-xl">
@@ -184,7 +188,7 @@ export default function DashboardClient({
                 </div>
              </div>
           )}
-          
+
           {!isSearching && searchQuery && (
              <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
                <AISearchSummary query={searchQuery} tools={filteredTools} />
