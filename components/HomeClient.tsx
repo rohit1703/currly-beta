@@ -13,9 +13,20 @@ import { useCountUp } from '@/hooks/useCountUp';
 import { Testimonials } from '@/components/TestimonialsSection';
 import { Footer } from '@/components/FooterSection';
 
-// --- ANIMATION VARIANTS (Option B: Micro Lift) ---
+// --- ANIMATION VARIANTS ---
+
+// 1. STATIC FADE (For Hero - No movement, feels planted)
+const fadeInStatic: Variants = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: { duration: 0.8, ease: "easeOut" } 
+  }
+};
+
+// 2. MICRO LIFT (For Content - Subtle rise)
 const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 10 }, // Reduced from 30 to 15 for a tighter, premium feel
+  hidden: { opacity: 0, y: 20 },
   visible: { 
     opacity: 1, 
     y: 0, 
@@ -29,13 +40,13 @@ const staggerContainer: Variants = {
     opacity: 1,
     transition: {
       staggerChildren: 0.1,
-      delayChildren: 0.1 // Faster start
+      delayChildren: 0.1
     }
   }
 };
 
 const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.98 }, // Subtle scale
+  hidden: { opacity: 0, scale: 0.98 },
   visible: { 
     opacity: 1, 
     scale: 1, 
@@ -90,7 +101,6 @@ export default function HomeClient({ tools }: { tools: any[] }) {
     { name: "Productivity", icon: LayoutGrid, tools: "200+", slug: "productivity" },
   ];
 
-  // Check if we have tools to show
   const hasTools = tools && tools.length > 0;
 
   return (
@@ -134,26 +144,26 @@ export default function HomeClient({ tools }: { tools: any[] }) {
             variants={staggerContainer}
             className="relative z-10"
           >
-            {/* Badge */}
-            <motion.div variants={fadeInUp} className="relative inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-white/10 rounded-full mb-8 border border-blue-100 dark:border-white/10">
+            {/* Badge (Static Fade) */}
+            <motion.div variants={fadeInStatic} className="relative inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-white/10 rounded-full mb-8 border border-blue-100 dark:border-white/10">
               <Globe className="w-4 h-4 text-[#0066FF] dark:text-white" />
               <span className="text-xs font-bold uppercase tracking-wide text-[#0066FF] dark:text-white">The World's First AI Tools Search Engine</span>
             </motion.div>
 
-            {/* Headline */}
-            <motion.h1 variants={fadeInUp} className="text-5xl md:text-7xl lg:text-8xl font-extrabold mb-8 leading-[1.1] tracking-tighter text-gray-900 dark:text-white">
+            {/* Headline (Static Fade) */}
+            <motion.h1 variants={fadeInStatic} className="text-5xl md:text-7xl lg:text-8xl font-extrabold mb-8 leading-[1.1] tracking-tighter text-gray-900 dark:text-white">
               Discover the Perfect <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0066FF] to-cyan-500">AI Tool in Seconds</span>
             </motion.h1>
 
-            {/* Subtext */}
-            <motion.p variants={fadeInUp} className="text-xl text-gray-500 dark:text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
+            {/* Subtext (Static Fade) */}
+            <motion.p variants={fadeInStatic} className="text-xl text-gray-500 dark:text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed font-medium">
               Stop searching. Start building. <br className="hidden md:block"/>
               <span className="text-gray-900 dark:text-white font-bold">712+ tools</span> curated by experts.
             </motion.p>
 
-            {/* SEARCH BAR */}
-            <motion.div id="search-section" variants={scaleIn} className="relative max-w-3xl mx-auto z-10">
+            {/* SEARCH BAR (Static Fade) */}
+            <motion.div id="search-section" variants={fadeInStatic} className="relative max-w-3xl mx-auto z-10">
               <form onSubmit={handleSearch} className="relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-[#0066FF] to-cyan-500 rounded-2xl opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
                 <div className="relative flex items-center gap-4 bg-white dark:bg-[#111] rounded-2xl p-3 shadow-2xl border border-gray-200 dark:border-white/10">
@@ -184,7 +194,7 @@ export default function HomeClient({ tools }: { tools: any[] }) {
           </motion.div>
         </div>
 
-        {/* CATEGORIES */}
+        {/* CATEGORIES (Keep Lift) */}
         <motion.div 
           initial="hidden"
           whileInView="visible"
@@ -226,7 +236,7 @@ export default function HomeClient({ tools }: { tools: any[] }) {
            <StatItem value={15} label="Categories" />
         </motion.div>
 
-        {/* LIVE DATA GRID - Hidden if 0 tools */}
+        {/* LIVE DATA GRID */}
         {hasTools && (
           <div className="max-w-7xl mx-auto px-4 relative z-10 mb-24 text-left">
              <motion.div 
@@ -236,8 +246,7 @@ export default function HomeClient({ tools }: { tools: any[] }) {
                className="flex items-center justify-between mb-8"
              >
                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Recently Added</h2>
-               {/* Hiding the '0 tools indexed' text if for some reason it appears incorrectly */}
-               <span className="text-sm text-gray-500">{tools.length} tools indexed</span>
+               {/* Hidden count */}
              </motion.div>
              
              <motion.div 

@@ -2,32 +2,27 @@
 
 import { motion, Variants } from 'framer-motion';
 
-// Explicitly type as Variants to fix build error
 const mistVariants: Variants = {
   hidden: { 
     opacity: 0, 
     filter: 'blur(10px)', 
-    y: 5, 
-    scale: 0.98 
+    scale: 0.99 // Micro-scale only, NO Y movement
   },
   visible: { 
     opacity: 1, 
     filter: 'blur(0px)', 
-    y: 0, 
     scale: 1,
     transition: { 
-      duration: 0.6, 
-      // The error happened here. We keep the bezier curve but Typescript now accepts it because of the Variants type
-      ease: [0.22, 1, 0.36, 1] 
+      duration: 0.5, 
+      ease: [0.25, 0.1, 0.25, 1] // Cubic bezier for "snappy" feel
     }
   },
   exit: { 
     opacity: 0, 
     filter: 'blur(10px)', 
-    y: -5,
-    scale: 1.02,
+    scale: 1.01,
     transition: { 
-      duration: 0.4, 
+      duration: 0.3, 
       ease: "easeIn" 
     }
   }
