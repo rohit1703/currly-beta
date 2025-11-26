@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, Clock, Loader2, Globe, Sparkles, LayoutGrid, Code, PenTool, BarChart3, MessageSquare, Edit } from 'lucide-react';
+import Link from 'next/link'; // <--- THIS WAS MISSING
+import { Search, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, Clock, Loader2, Globe, Sparkles, LayoutGrid } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import UserNav from '@/components/UserNav';
@@ -10,18 +11,6 @@ import ToolCard from '@/components/ToolCardItem';
 import AISearchSummary from '@/components/AISearchSummary';
 import AdoptionModal from '@/components/AdoptionModal';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// Categories Data for Browse Mode
-const BROWSE_CATEGORIES = [
-  { name: "Marketing", icon: Zap, count: "120+" },
-  { name: "Development", icon: Code, count: "85+" },
-  { name: "Design", icon: PenTool, count: "94+" },
-  { name: "Productivity", icon: LayoutGrid, count: "200+" },
-  { name: "Analytics", icon: BarChart3, count: "45+" },
-  { name: "Chatbots", icon: MessageSquare, count: "60+" },
-  { name: "Writing", icon: Edit, count: "70+" },
-  { name: "Video", icon: Globe, count: "50+" },
-];
 
 export default function DashboardClient({ 
   initialTools, 
@@ -46,6 +35,7 @@ export default function DashboardClient({
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingTexts = ["Analyzing intent...", "Vectorizing query...", "Scanning 1,700+ tools...", "Ranking by relevance..."];
 
+  // Cycle through loading texts
   useEffect(() => {
     if (isSearching) {
       const interval = setInterval(() => {
@@ -55,11 +45,13 @@ export default function DashboardClient({
     }
   }, [isSearching]);
 
+  // Stop loading when new data arrives (initialTools changes)
   useEffect(() => {
     setIsSearching(false);
   }, [initialTools]);
 
   const handleSearchSubmit = () => {
+    // Trigger visual loading
     setIsSearching(true);
   };
 
@@ -103,12 +95,7 @@ export default function DashboardClient({
     }
   };
 
-  // Function to handle category selection from Browse tab
-  const selectCategory = (catName: string) => {
-    setCategoryFilter(catName);
-    setActiveTab('search'); // Switch back to search/results view
-  };
-
+  // REUSABLE SIDEBAR CONTENT
   const SidebarContent = () => (
     <div className="space-y-8">
       <div>
@@ -156,6 +143,7 @@ export default function DashboardClient({
   return (
     <div className="flex h-screen bg-[#F5F5F7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans transition-colors duration-500">
       
+      {/* DESKTOP SIDEBAR */}
       <aside className="w-72 border-r border-gray-200/50 dark:border-white/10 p-6 flex flex-col gap-8 hidden md:flex bg-white/50 dark:bg-[#0A0A0A] backdrop-blur-xl overflow-y-auto">
         <Link href="/">
           <Logo />
@@ -163,18 +151,23 @@ export default function DashboardClient({
         <SidebarContent />
       </aside>
 
+      {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col min-w-0 relative bg-[#F5F5F7] dark:bg-[#050505]">
         
+        {/* HEADER */}
         <header className="h-auto min-h-[80px] border-b border-gray-200/50 dark:border-white/10 flex flex-col justify-center px-4 md:px-10 gap-4 bg-white/60 dark:bg-[#050505]/80 backdrop-blur-xl z-10 sticky top-0 pt-4 pb-2">
           <div className="flex items-center justify-between w-full">
+             {/* Mobile Menu Trigger */}
              <div className="md:hidden"><MobileMenu><SidebarContent /></MobileMenu></div>
+             
              <div className="flex items-center gap-4 ml-auto">
                 <ThemeToggle />
                 <UserNav />
              </div>
           </div>
 
-          <div className="flex justify-center gap-8 text-sm font-medium w-full">
+          {/* SEARCH TABS */}
+          <div className="flex justify-center gap-6 mb-2 text-sm font-medium w-full">
              <button 
                onClick={() => setActiveTab('search')}
                className={`pb-3 border-b-2 transition-colors px-2 ${activeTab === 'search' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
@@ -195,7 +188,7 @@ export default function DashboardClient({
           {/* --- SEARCH TAB CONTENT --- */}
           {activeTab === 'search' && (
             <>
-              <div className="max-w-2xl mx-auto relative mb-10">
+              <div className="max-w-2xl mx-auto relative mb-10 mt-4">
                  <form action="/dashboard" onSubmit={handleSearchSubmit} className="relative">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-[#0066FF] to-cyan-500 rounded-full opacity-20 blur"></div>
                     <div className="relative flex items-center bg-white dark:bg-[#111] rounded-full shadow-lg p-1 pl-5">
@@ -276,15 +269,28 @@ export default function DashboardClient({
             </>
           )}
 
-          {/* --- BROWSE TAB CONTENT (NEW) --- */}
+          {/* --- BROWSE TAB CONTENT --- */}
           {activeTab === 'browse' && (
-            <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8">
                <h2 className="text-2xl font-bold mb-8 text-center text-[#1A1A1A] dark:text-white">Browse by Category</h2>
                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {BROWSE_CATEGORIES.map((cat, i) => (
+                  {[
+                    { name: "Marketing", icon: Zap, count: "120+" },
+                    { name: "Development", icon: Code, count: "85+" },
+                    { name: "Design", icon: PenTool, count: "94+" },
+                    { name: "Productivity", icon: LayoutGrid, count: "200+" },
+                    { name: "Analytics", icon: Globe, count: "45+" },
+                    { name: "Chatbots", icon: Globe, count: "60+" },
+                    { name: "Writing", icon: Globe, count: "70+" },
+                    { name: "Video", icon: Globe, count: "50+" },
+                  ].map((cat, i) => (
                     <button
                       key={i}
-                      onClick={() => selectCategory(cat.name)}
+                      onClick={() => {
+                         // Just switch tab and filter, no page reload needed
+                         setCategoryFilter(cat.name);
+                         setActiveTab('search'); 
+                      }}
                       className="flex flex-col items-center justify-center p-8 rounded-[2rem] bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group"
                     >
                        <div className="w-12 h-12 bg-blue-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-[#0066FF] mb-4 group-hover:scale-110 transition-transform">
