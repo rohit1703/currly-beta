@@ -39,7 +39,7 @@ export default async function Dashboard({
       // C. Search Supabase via RPC (Vector Match)
       const { data, error } = await supabase.rpc('match_tools', {
         query_embedding: queryEmbedding,
-        match_threshold: 0.1, // Lower threshold to allow broader matches
+        match_threshold: -1, // Lower threshold to allow broader matches
         match_count: 20
       });
 
