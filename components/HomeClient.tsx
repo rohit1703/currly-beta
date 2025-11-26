@@ -15,7 +15,7 @@ import { Footer } from '@/components/FooterSection';
 
 // --- ANIMATION VARIANTS (Option B: Micro Lift) ---
 const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 15 }, // Reduced from 30 to 15 for a tighter, premium feel
+  hidden: { opacity: 0, y: 10 }, // Reduced from 30 to 15 for a tighter, premium feel
   visible: { 
     opacity: 1, 
     y: 0, 
