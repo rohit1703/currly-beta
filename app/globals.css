@@ -18,17 +18,18 @@
 
 /* AUTOMATICALLY APPLY FONTS */
 @layer base {
-  /* Default body text uses Manrope (via Tailwind 'font-sans' config) */
+  /* Default body text uses Manrope (via Tailwind 'font-sans' default) */
   html {
-    @apply font-sans;
+    @apply font-sans text-gray-900 dark:text-white;
   }
 
-  /* Force all Headings to use Bodoni Moda */
+  /* FIX: Use standard CSS for headings to prevent build errors */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading tracking-tight;
+    font-family: var(--font-bodoni), serif;
+    @apply tracking-tight font-bold;
   }
   
-  /* Optional: Make H1s extra tight for that editorial look */
+  /* Make H1s extra tight for that editorial look */
   h1 {
     @apply tracking-tighter;
   }
