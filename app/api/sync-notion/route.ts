@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 
-export const maxDuration = 300; // Request 5-minute timeout
+export const maxDuration = 300; // 5 minutes timeout
 
 export async function GET() {
   const NOTION_KEY = process.env.NOTION_SECRET_KEY;
@@ -23,12 +23,11 @@ export async function GET() {
     let hasMore = true;
     let startCursor: string | undefined = undefined;
 
-    // 1. Fetch ALL pages from Notion (Pagination Loop)
-    console.log("Starting Notion Fetch...");
+    console.log("Starting Notion Fetch (No Filter)...");
     
+    // 1. Fetch ALL pages (Pagination Loop)
     while (hasMore) {
-      // FIX: Explicitly type ': Response' to prevent TypeScript inference error
-      const res: Response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
+      const notionRes: Response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${NOTION_KEY}`,
@@ -36,18 +35,15 @@ export async function GET() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          filter: {
-            property: 'Launch Status',
-            select: { equals: 'Live' }
-          },
+          // REMOVED FILTER: We fetch everything to ensure we get data
           start_cursor: startCursor,
           page_size: 100
         }),
       });
 
-      if (!res.ok) throw new Error(`Notion error: ${res.status}`);
+      if (!notionRes.ok) throw new Error(`Notion error: ${notionRes.status}`);
       
-      const data = await res.json();
+      const data = await notionRes.json();
       allTools = [...allTools, ...data.results];
       hasMore = data.has_more;
       startCursor = data.next_cursor ?? undefined;
@@ -59,7 +55,7 @@ export async function GET() {
 
     const slugify = (text: string) => text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
 
-    // 2. Process & Embed in Batches
+    // 2. Process & Embed
     const BATCH_SIZE = 10;
     const processedTools: any[] = [];
 
@@ -68,14 +64,29 @@ export async function GET() {
       
       const batchPromises = batch.map(async (page: any) => {
         const props = page.properties;
-        const name = props['Tool Name']?.title?.[0]?.plain_text || 'Untitled';
         
-        if (name === 'Untitled') return null;
+        // Handle potentially missing or different column names gracefully
+        const getTitle = (p: any) => p?.title?.[0]?.plain_text || 'Untitled';
+        const getText = (p: any) => p?.rich_text?.[0]?.plain_text || '';
+        const getSelect = (p: any) => p?.select?.name || '';
+        const getUrl = (p: any) => p?.url || null;
 
-        const description = props['Description']?.rich_text?.[0]?.plain_text || '';
-        const category = props['Main Category']?.select?.name || '';
-        const pricing = props['Pricing Model']?.select?.name || '';
+        // CRITICAL: Check exact property names from your Notion
+        const name = getTitle(props['Tool Name'] || props['Name']); 
         
+        if (name === 'Untitled' || !name) return null;
+
+        const description = getText(props['Description']);
+        const category = getSelect(props['Main Category'] || props['Category']);
+        const pricing = getSelect(props['Pricing Model'] || props['Pricing']);
+        const website = getUrl(props['Website'] || props['URL']);
+        const launchDate = props['Date Added']?.date?.start || null;
+        
+        // Image handling
+        const imageProp = props['Image'] || props['Logo'];
+        const imageUrl = imageProp?.files?.[0]?.file?.url || imageProp?.files?.[0]?.external?.url || '';
+
+        // OpenAI Embedding
         let embedding = null;
         try {
           const contentToEmbed = `${name}: ${description}. Category: ${category}. Pricing: ${pricing}`;
@@ -95,12 +106,12 @@ export async function GET() {
           notion_id: page.id,
           name,
           slug,
-          website: props['Website']?.url || null,
+          website,
           description,
           main_category: category,
           pricing_model: pricing,
-          image_url: props['Image']?.files?.[0]?.file?.url || props['Image']?.files?.[0]?.external?.url || '',
-          launch_date: props['Date Added']?.date?.start || null,
+          image_url: imageUrl,
+          launch_date: launchDate,
           embedding
         };
       });
