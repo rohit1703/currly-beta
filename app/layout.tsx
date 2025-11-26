@@ -1,15 +1,27 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
+import type { Metadata } from 'next';
+import { Bodoni_Moda, Manrope } from 'next/font/google';
+import './globals.css';
+import { ThemeProvider } from '@/components/theme-provider';
+import { CSPostHogProvider } from '@/components/posthog-provider';
+import PostHogPageView from '@/components/PostHogPageView';
 
-const inter = Inter({ subsets: ["latin"] });
+const manrope = Manrope({
+  subsets: ['latin'],
+  variable: '--font-manrope',
+  display: 'swap',
+});
+
+const bodoni = Bodoni_Moda({
+  subsets: ['latin'],
+  variable: '--font-bodoni',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://currly-beta.vercel.app'), // Change to your real domain later
+  metadataBase: new URL('https://currly-beta.vercel.app'),
   title: {
     default: 'Currly - The World\'s First AI Tools Discovery Engine',
-    template: '%s | Currly', // This ensures pages look like "About | Currly"
+    template: '%s | Currly',
   },
   description: 'Discover 700+ AI tools curated by experts. No affiliate bias, just honest reviews.',
   keywords: ['AI tools', 'SaaS', 'software discovery', 'artificial intelligence', 'tech stack'],
@@ -37,22 +49,24 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} bg-[#F5F5F7] dark:bg-black text-gray-900 dark:text-white selection:bg-[#0066FF] selection:text-white`}>
-        {/* Wrap children in the ThemeProvider */}
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-        </ThemeProvider>
-      </body>
+    <html lang="en" className={`${manrope.variable} ${bodoni.variable} scroll-smooth`} suppressHydrationWarning>
+      <CSPostHogProvider>
+        <body className="font-sans antialiased bg-[#F5F5F7] dark:bg-black text-gray-900 dark:text-white selection:bg-[#0066FF] selection:text-white">
+          <PostHogPageView />
+          <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+          </ThemeProvider>
+        </body>
+      </CSPostHogProvider>
     </html>
   );
 }
