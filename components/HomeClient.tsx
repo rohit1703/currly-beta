@@ -120,7 +120,7 @@ export default function HomeClient({ tools }: { tools: any[] }) {
             {/* Badge */}
             <motion.div variants={fadeInUp} className="relative inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-50 dark:bg-white/10 rounded-full mb-6 border border-blue-100 dark:border-white/10">
               <Globe className="w-3 h-3 md:w-4 md:h-4 text-[#0066FF] dark:text-white" />
-              <span className="text-[10px] md:text-xs font-bold uppercase tracking-wide text-[#0066FF] dark:text-white">The World's First AI Search Engine</span>
+              <span className="text-[10px] md:text-xs font-bold uppercase tracking-wide text-[#0066FF] dark:text-white">The World's First AI Tools Search Engine</span>
             </motion.div>
 
             {/* Headline - Responsive Text Size */}

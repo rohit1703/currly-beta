@@ -1,314 +1,63 @@
-'use client';
+import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
+import OpenAI from 'openai';
+import DashboardClient from '@/components/DashboardClient';
 
-import React, { useState, useEffect, Suspense } from 'react';
-import { supabase } from '@/utils/supabase';
-import { Zap, MapPin, Clock, Search, Loader2, CheckSquare, Square, X, ArrowRight } from 'lucide-react';
-import AdoptionModal from '@/components/AdoptionModal';
-import AISearchSummary from '@/components/AISearchSummary';
-import { useSearchParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import UserNav from '@/components/UserNav';
-import { Logo } from '@/components/Logo';
-import MobileMenu from '@/components/MobileMenu'; // IMPORTED
-
-function DashboardContent() {
-  const searchParams = useSearchParams();
+export default async function Dashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const params = await searchParams;
+  const query = params.q || '';
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
   
-  // DATA STATE
-  const [tools, setTools] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  let tools: any[] = [];
 
-  // FILTER STATE
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
-  const [indiaOnly, setIndiaOnly] = useState(false);
-  const [priceFilter, setPriceFilter] = useState<string[]>([]);
-  const [categoryFilter, setCategoryFilter] = useState(searchParams.get('category') || 'All');
-
-  // INTERACTION STATE
-  const [compareList, setCompareList] = useState<any[]>([]);
-  const [selectedTool, setSelectedTool] = useState<any>(null);
-  const [isAdoptionOpen, setIsAdoptionOpen] = useState(false);
-
-  // 1. FETCH DATA
-  useEffect(() => {
-    async function fetchTools() {
+  // 1. AI SEARCH LOGIC
+  if (query) {
+    if (process.env.OPENAI_API_KEY) {
       try {
-        setLoading(true);
-        let query = supabase.from('tools').select('*');
-        if (indiaOnly) query = query.eq('is_india_based', true);
-        
-        const { data, error } = await query.limit(300);
-        
-        if (error) throw error;
-        setTools(data || []);
-      } catch (error) {
-        console.error('Error fetching tools:', error);
-      } finally {
-        setLoading(false);
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const embeddingResponse = await openai.embeddings.create({
+          model: 'text-embedding-3-small',
+          input: query,
+          encoding_format: 'float',
+        });
+        const queryEmbedding = embeddingResponse.data[0].embedding;
+
+        // Search via Vector RPC
+        const { data, error } = await supabase.rpc('match_tools', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.01,
+          match_count: 50
+        });
+
+        if (!error) tools = data || [];
+      } catch (err) {
+        console.error("Vector search failed:", err);
       }
     }
-    fetchTools();
-  }, [indiaOnly]); 
-
-  // 2. SMART FILTERING LOGIC
-  const filteredTools = tools.filter(tool => {
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const matches = tool.name?.toLowerCase().includes(q) || tool.description?.toLowerCase().includes(q);
-      if (!matches) return false;
+    
+    // Fallback to text search if AI fails or finds nothing
+    if (tools.length === 0) {
+      const { data } = await supabase
+        .from('tools')
+        .select('*')
+        .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+        .limit(20);
+      tools = data || [];
     }
+  } else {
+    // Default View
+    const { data } = await supabase
+      .from('tools')
+      .select('*')
+      .order('launch_date', { ascending: false })
+      .limit(50);
+    tools = data || [];
+  }
 
-    if (categoryFilter !== 'All') {
-      const cat = categoryFilter.toLowerCase();
-      const matchesCat = tool.description?.toLowerCase().includes(cat) || tool.name?.toLowerCase().includes(cat);
-      if (!matchesCat) return false;
-    }
-
-    if (priceFilter.length > 0) {
-      const isFree = tool.pricing_type === 'free' || tool.pricing_type === 'freemium';
-      if (priceFilter.includes('Free') && !isFree) return false;
-      if (priceFilter.includes('Paid') && isFree) return false;
-    }
-
-    return true;
-  });
-
-  const getLogo = (tool: any) => {
-    if (tool.logo_url) return tool.logo_url;
-    if (tool.website_url) {
-      try {
-        let url = tool.website_url;
-        if (!url.startsWith('http')) url = `https://${url}`;
-        return `https://logo.clearbit.com/${new URL(url).hostname}`;
-      } catch (e) { return null; }
-    }
-    return null;
-  };
-
-  const toggleCompare = (tool: any) => {
-    if (compareList.find(t => t.id === tool.id)) {
-      setCompareList(compareList.filter(t => t.id !== tool.id));
-    } else {
-      if (compareList.length < 3) setCompareList([...compareList, tool]);
-      else alert("You can only compare up to 3 tools at a time.");
-    }
-  };
-
-  // --- REUSABLE SIDEBAR CONTENT (Shared between Desktop & Mobile) ---
-  const SidebarContent = () => (
-    <div className="space-y-8">
-      {/* REGION */}
-      <div>
-        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Region</div>
-        <label className="flex items-center justify-between cursor-pointer group py-3 px-4 bg-white dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5 hover:border-[#0066FF]/30 transition-all">
-          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">🇮🇳 India Only</span>
-          <button 
-            onClick={() => setIndiaOnly(!indiaOnly)}
-            className={`w-11 h-6 rounded-full transition-colors flex items-center p-1 ${indiaOnly ? 'bg-[#0066FF]' : 'bg-gray-200 dark:bg-white/10'}`}
-          >
-            <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${indiaOnly ? 'translate-x-5' : 'translate-x-0'}`} />
-          </button>
-        </label>
-      </div>
-
-      {/* PRICING */}
-      <div>
-        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Pricing Model</div>
-        <div className="space-y-2">
-          {['Free', 'Paid'].map(type => (
-            <div 
-              key={type} 
-              onClick={() => {
-                if (priceFilter.includes(type)) setPriceFilter(priceFilter.filter(p => p !== type));
-                else setPriceFilter([...priceFilter, type]);
-              }}
-              className="flex items-center gap-3 px-2 py-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer"
-            >
-                {priceFilter.includes(type) ? <CheckSquare className="w-5 h-5 text-[#0066FF]" /> : <Square className="w-5 h-5 text-gray-300" />}
-                <span className="text-sm text-gray-700 dark:text-gray-300">{type}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* CATEGORIES */}
-      <div>
-        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Categories</div>
-        <div className="space-y-1">
-          {['All', 'Marketing', 'Development', 'Design', 'Productivity', 'Video', 'Finance'].map(cat => (
-              <button 
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${categoryFilter === cat ? 'bg-[#0066FF]/10 text-[#0066FF]' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'}`}
-              >
-                {cat}
-              </button>
-          ))}
-        </div>
-      </div>
-      
-       <div className="mt-8 p-5 bg-[#0066FF]/5 dark:bg-blue-900/10 rounded-2xl border border-[#0066FF]/10">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <div className="text-xs text-[#0066FF] font-bold uppercase tracking-wider">Live Status</div>
-          </div>
-          <div className="text-lg font-bold text-[#1A1A1A] dark:text-white">712+ Tools</div>
-       </div>
-    </div>
-  );
-
-  return (
-    <div className="flex h-screen bg-[#FDFBF7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans transition-colors duration-500">
-      
-      {/* --- DESKTOP SIDEBAR (Hidden on Mobile) --- */}
-      <aside className="w-72 border-r border-gray-200/50 dark:border-white/10 p-6 flex flex-col gap-8 hidden md:flex bg-white/50 dark:bg-[#0A0A0A] backdrop-blur-xl overflow-y-auto">
-        <Link href="/">
-          <Logo />
-        </Link>
-        <SidebarContent />
-      </aside>
-
-      {/* --- MAIN CONTENT --- */}
-      <main className="flex-1 flex flex-col min-w-0 relative bg-[#FDFBF7] dark:bg-[#050505]">
-        
-        {/* HEADER */}
-        <header className="h-20 md:h-24 border-b border-gray-200/50 dark:border-white/10 flex items-center justify-between px-4 md:px-10 gap-4 bg-white/60 dark:bg-[#050505]/80 backdrop-blur-xl z-10 sticky top-0">
-          
-          {/* MOBILE MENU (Visible only on Mobile) */}
-          <MobileMenu>
-             <SidebarContent />
-          </MobileMenu>
-
-          {/* SEARCH BAR */}
-          <div className="flex items-center gap-4 flex-1 max-w-3xl bg-white dark:bg-[#111] p-2 md:p-3 rounded-2xl border border-gray-200 dark:border-white/10 focus-within:border-[#0066FF]/50 focus-within:shadow-lg transition-all shadow-sm">
-            <Search className="w-5 h-5 text-gray-400 ml-2" />
-            <input 
-              type="text" 
-              placeholder={`Search ${categoryFilter !== 'All' ? categoryFilter : ''} tools...`}
-              className="bg-transparent border-none outline-none text-base md:text-lg text-[#1A1A1A] dark:text-white w-full placeholder-gray-400"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <div className="flex items-center gap-2 md:gap-4">
-             <ThemeToggle />
-             <UserNav />
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto p-4 md:p-10 scroll-smooth">
-          
-          {/* AI SUMMARY */}
-          {!loading && searchQuery && (
-             <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
-               <AISearchSummary query={searchQuery} tools={filteredTools} />
-             </div>
-          )}
-
-          {/* DISCOVERY MODE */}
-          {!loading && !searchQuery && categoryFilter === 'All' && (
-             <div className="mb-12 hidden md:block">
-                <h2 className="text-xl font-bold mb-6 text-[#1A1A1A] dark:text-white">Curated Collections</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                   {['Top Marketing Tools', 'Made in India', 'Startup Essentials'].map(c => (
-                      <div key={c} className="h-32 rounded-[2rem] bg-gradient-to-br from-[#0066FF] to-[#00D9FF] p-6 flex items-end text-white font-bold text-lg cursor-pointer hover:scale-[1.02] transition-transform shadow-lg">
-                        {c}
-                      </div>
-                   ))}
-                </div>
-             </div>
-          )}
-
-          {/* TOOL GRID */}
-          {loading ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400">
-              <Loader2 className="w-10 h-10 animate-spin mb-4 text-[#0066FF]" />
-              <p>Syncing...</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-32">
-              {filteredTools.map((tool) => {
-                const logo = getLogo(tool);
-                const isSelected = compareList.find(t => t.id === tool.id);
-
-                return (
-                  <div key={tool.id} className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col`}>
-                    
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="w-14 h-14 md:w-16 md:h-16 bg-[#FDFBF7] dark:bg-black rounded-2xl p-2 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-inner overflow-hidden">
-                        {logo ? (
-                          <img src={logo} alt={tool.name} className="w-full h-full object-contain rounded-lg" onError={(e) => {e.currentTarget.style.display='none'}} />
-                        ) : (
-                          <span className="text-xl md:text-2xl font-bold text-gray-400">{tool.name[0]}</span>
-                        )}
-                      </div>
-                      <span className={`text-[10px] font-bold px-3 py-1 rounded-full border tracking-wide ${tool.pricing_type === 'free' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/5 text-gray-500'}`}>
-                        {tool.pricing_type === 'free' ? 'FREE' : 'PAID'}
-                      </span>
-                    </div>
-
-                    <h3 className="font-bold text-lg md:text-xl mb-2 text-[#1A1A1A] dark:text-white">{tool.name}</h3>
-                    <div className="flex items-center gap-4 text-xs text-gray-500 font-medium mb-4">
-                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {tool.setup_time_minutes || 15}m setup</span>
-                       {tool.is_india_based && <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded"><MapPin className="w-3 h-3" /> India</span>}
-                    </div>
-
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 line-clamp-2 leading-relaxed flex-grow">
-                      {tool.description || "AI-powered tool for efficiency and automation."}
-                    </p>
-
-                    <div className="grid grid-cols-2 gap-3 mt-auto">
-                      <button 
-                        onClick={() => toggleCompare(tool)}
-                        className={`flex items-center justify-center gap-2 text-xs font-bold py-3 rounded-xl transition-colors border ${isSelected ? 'bg-blue-50 text-[#0066FF] border-blue-100' : 'bg-white dark:bg-black hover:bg-gray-50 border-gray-200 dark:border-white/20 text-gray-600 dark:text-gray-300'}`}
-                      >
-                        {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-                        Compare
-                      </button>
-                      <button 
-                        onClick={() => { setSelectedTool(tool); setIsAdoptionOpen(true); }}
-                        className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-500/20"
-                      >
-                        Test Demo <Zap className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        
-        {/* FLOATING COMPARE DOCK */}
-        {compareList.length > 0 && (
-           <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#1A1A1A] text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-10 border border-white/10 w-[90%] md:w-auto justify-between md:justify-start">
-              <div className="flex -space-x-2">
-                {compareList.map(t => (
-                   <div key={t.id} className="w-8 h-8 rounded-full bg-gray-800 border border-black flex items-center justify-center text-[10px] font-bold overflow-hidden">
-                      {t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover" /> : t.name[0]}
-                   </div>
-                ))}
-              </div>
-              <span className="font-bold text-sm hidden md:inline">{compareList.length} Selected</span>
-              <div className="h-6 w-px bg-white/20 hidden md:block"></div>
-              <button className="text-sm font-bold hover:text-[#0066FF] transition-colors flex items-center gap-1">
-                Compare <span className="hidden md:inline">Now</span> <ArrowRight className="w-4 h-4 ml-1" />
-              </button>
-              <button onClick={() => setCompareList([])} className="text-gray-500 hover:text-white transition-colors">
-                <X className="w-4 h-4" />
-              </button>
-           </div>
-        )}
-
-      </main>
-
-      <AdoptionModal isOpen={isAdoptionOpen} onClose={() => setIsAdoptionOpen(false)} toolName={selectedTool?.name} demoUrl={selectedTool?.demo_video_url} />
-    </div>
-  );
-}
-
-export default function DashboardPage() {
-  return <Suspense fallback={<div className="flex h-screen items-center justify-center bg-[#FDFBF7] dark:bg-[#050505]">Loading...</div>}><DashboardContent /></Suspense>;
+  return <DashboardClient initialTools={tools} searchQuery={query} />;
 }
