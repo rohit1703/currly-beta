@@ -23,9 +23,9 @@ export async function GET() {
     let hasMore = true;
     let startCursor: string | undefined = undefined;
 
-    console.log("Starting Notion Fetch (No Filter)...");
+    console.log("Starting Notion Fetch...");
     
-    // 1. Fetch ALL pages (Pagination Loop)
+    // 1. Fetch ALL pages
     while (hasMore) {
       const notionRes: Response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
         method: 'POST',
@@ -35,7 +35,7 @@ export async function GET() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          // REMOVED FILTER: We fetch everything to ensure we get data
+          // No filter: Get everything
           start_cursor: startCursor,
           page_size: 100
         }),
@@ -51,11 +51,10 @@ export async function GET() {
       console.log(`Fetched ${allTools.length} tools so far...`);
     }
 
-    console.log(`Finished fetching. Total Tools: ${allTools.length}`);
-
+    // Helper
     const slugify = (text: string) => text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
 
-    // 2. Process & Embed
+    // 2. Process
     const BATCH_SIZE = 10;
     const processedTools: any[] = [];
 
@@ -65,13 +64,12 @@ export async function GET() {
       const batchPromises = batch.map(async (page: any) => {
         const props = page.properties;
         
-        // Handle potentially missing or different column names gracefully
         const getTitle = (p: any) => p?.title?.[0]?.plain_text || 'Untitled';
         const getText = (p: any) => p?.rich_text?.[0]?.plain_text || '';
         const getSelect = (p: any) => p?.select?.name || '';
         const getUrl = (p: any) => p?.url || null;
 
-        // CRITICAL: Check exact property names from your Notion
+        // Flexible Property Names (Checks "Tool Name" OR "Name")
         const name = getTitle(props['Tool Name'] || props['Name']); 
         
         if (name === 'Untitled' || !name) return null;
@@ -82,11 +80,10 @@ export async function GET() {
         const website = getUrl(props['Website'] || props['URL']);
         const launchDate = props['Date Added']?.date?.start || null;
         
-        // Image handling
         const imageProp = props['Image'] || props['Logo'];
         const imageUrl = imageProp?.files?.[0]?.file?.url || imageProp?.files?.[0]?.external?.url || '';
 
-        // OpenAI Embedding
+        // Embedding
         let embedding = null;
         try {
           const contentToEmbed = `${name}: ${description}. Category: ${category}. Pricing: ${pricing}`;
@@ -100,7 +97,8 @@ export async function GET() {
           console.error(`Failed to embed ${name}`, e);
         }
 
-        const slug = `${slugify(name)}-${page.id.slice(0, 6)}`;
+        // FIX: Use Full ID to guarantee uniqueness
+        const slug = `${slugify(name)}-${page.id}`;
 
         return {
           notion_id: page.id,
@@ -123,7 +121,7 @@ export async function GET() {
       console.log(`Processed ${Math.min(i + BATCH_SIZE, allTools.length)}/${allTools.length}`);
     }
 
-    // 3. Upsert to Supabase
+    // 3. Upsert
     if (processedTools.length > 0) {
       for (let i = 0; i < processedTools.length; i += 50) {
         const chunk = processedTools.slice(i, i + 50);
