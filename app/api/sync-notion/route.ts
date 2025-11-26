@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 
-export const maxDuration = 60; // Allow up to 60 seconds for this function (Vercel Pro/Hobby limit)
+export const maxDuration = 60; // Allow up to 60 seconds
 
 export async function GET() {
   const NOTION_KEY = process.env.NOTION_SECRET_KEY;
@@ -11,7 +11,6 @@ export async function GET() {
   const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
-  // 1. Validate Keys
   if (!NOTION_KEY || !SUPABASE_KEY || !DATABASE_ID || !OPENAI_KEY) {
     return NextResponse.json({ success: false, error: 'Missing API Keys.' }, { status: 500 });
   }
@@ -20,7 +19,7 @@ export async function GET() {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
     const openai = new OpenAI({ apiKey: OPENAI_KEY });
 
-    // 2. Fetch from Notion (Raw Fetch)
+    // 2. Fetch from Notion
     console.log("Fetching from Notion...");
     const notionResponse = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
       method: 'POST',
@@ -41,9 +40,8 @@ export async function GET() {
     const data = await notionResponse.json();
     const results = data.results || [];
     
-    console.log(`Found ${results.length} tools. Processing embeddings...`);
+    console.log(`Found ${results.length} tools. Processing...`);
 
-    // Helper: Slugify
     const slugify = (text: string) => {
       return text.toString().toLowerCase().trim()
         .replace(/\s+/g, '-')
@@ -51,13 +49,10 @@ export async function GET() {
         .replace(/\-\-+/g, '-');
     };
 
-    // 3. Process Tools & Generate Embeddings
-    // We use Promise.all to process in parallel, but be careful with rate limits.
-    // For 700 tools, we might need batching, but let's try direct first.
+    // 3. Process & Embed
     const tools = await Promise.all(results.map(async (page: any) => {
       const props = page.properties;
       
-      // Extraction
       const getTitle = (p: any) => p?.title?.[0]?.plain_text || 'Untitled';
       const getText = (p: any) => p?.rich_text?.[0]?.plain_text || '';
       const getSelect = (p: any) => p?.select?.name || null;
@@ -68,21 +63,23 @@ export async function GET() {
       const category = getSelect(props['Main Category']) || '';
       const pricing = getSelect(props['Pricing Model']) || '';
       
-      // --- THE AI MAGIC START ---
-      // We create a string that represents the "meaning" of the tool
+      // OpenAI Embedding
       const contentToEmbed = `${name}: ${description}. Category: ${category}. Pricing: ${pricing}`;
+      let embedding = null;
       
-      // Generate Embedding
-      const embeddingResponse = await openai.embeddings.create({
-        model: 'text-embedding-3-small',
-        input: contentToEmbed,
-        encoding_format: 'float',
-      });
-      
-      const embedding = embeddingResponse.data[0].embedding;
-      // --- THE AI MAGIC END ---
+      try {
+        const embeddingResponse = await openai.embeddings.create({
+          model: 'text-embedding-3-small',
+          input: contentToEmbed,
+          encoding_format: 'float',
+        });
+        embedding = embeddingResponse.data[0].embedding;
+      } catch (e) {
+        console.error(`Failed to embed ${name}`, e);
+      }
 
-      const slug = `${slugify(name)}-${page.id.slice(0, 5)}`;
+      // FIX: Use FULL ID to guarantee uniqueness
+      const slug = `${slugify(name)}-${page.id}`;
 
       return {
         notion_id: page.id,
@@ -94,15 +91,18 @@ export async function GET() {
         pricing_model: pricing,
         image_url: props['Image']?.files?.[0]?.file?.url || props['Image']?.files?.[0]?.external?.url || '',
         launch_date: props['Date Added']?.date?.start || null,
-        embedding: embedding // <--- Saving the vector to DB
+        embedding: embedding
       };
     }));
 
     // 4. Upsert to Supabase
     if (tools.length > 0) {
+      // We ignore duplicates in the same batch by using a Map just in case
+      const uniqueTools = Array.from(new Map(tools.map(item => [item.notion_id, item])).values());
+
       const { error } = await supabase
         .from('tools')
-        .upsert(tools, { onConflict: 'notion_id' });
+        .upsert(uniqueTools, { onConflict: 'notion_id' });
 
       if (error) throw error;
     }
@@ -110,7 +110,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       count: tools.length,
-      message: `Synced & Embedded ${tools.length} tools successfully.`
+      message: `Synced ${tools.length} tools successfully.`
     });
 
   } catch (error: any) {
