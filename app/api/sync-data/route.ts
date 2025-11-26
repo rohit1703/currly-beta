@@ -26,24 +26,26 @@ export async function GET() {
     const csvText = await csvResponse.text();
 
     // 2. Parse CSV
+    // FIX: Cast to 'any[]' to silence TypeScript error regarding Object.keys()
     const records = parse(csvText, {
       columns: true, 
       skip_empty_lines: true,
       trim: true,
-    });
+    }) as any[];
 
     // DEBUG: Log the first row to see what columns we actually have
     if (records.length > 0) {
       console.log("✅ CSV Columns Detected:", Object.keys(records[0]));
-      console.log("✅ First Row Sample:", records[0]);
+      // console.log("✅ First Row Sample:", records[0]);
     } else {
       console.error("❌ CSV appears to be empty or failed to parse headers.");
     }
 
-    // REMOVED FILTER: We now process ALL rows to ensure data gets in
+    // Filter for "Live" status if needed, or take all
+    // Assuming you want all rows based on previous steps
     const liveTools = records;
 
-    console.log(`Found ${liveTools.length} tools total. Starting processing...`);
+    console.log(`Found ${liveTools.length} live tools.`);
 
     // Helper
     const slugify = (text: string) => text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
@@ -56,7 +58,7 @@ export async function GET() {
       const batch = liveTools.slice(i, i + BATCH_SIZE);
       
       const batchPromises = batch.map(async (record: any) => {
-        // Flexible Name Check (Try "Tool Name", "Name", or "Tool")
+        // Flexible Name Check
         const name = record['Tool Name'] || record['Name'] || record['Tool'];
         
         if (!name) return null;
@@ -66,7 +68,6 @@ export async function GET() {
         const mainCategory = record['Main Category'] || record['Category'] || 'General';
         const pricing = record['Pricing Model'] || record['Pricing'] || 'Unknown';
         const website = record['Website'] || '';
-        // Handle various date formats or default to now
         const launchDate = record['Date Added'] || new Date().toISOString();
         
         // Extra metadata
@@ -113,7 +114,7 @@ export async function GET() {
           main_category: mainCategory,
           pricing_model: pricing,
           image_url: imageUrl,
-          launch_date: new Date(launchDate).toISOString(), // Ensure valid date format
+          launch_date: new Date(launchDate).toISOString(),
           embedding
         };
       });
