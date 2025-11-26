@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
-import { parse } from 'csv-parse/sync'; // The new parser
+import { parse } from 'csv-parse/sync';
 
 export const maxDuration = 300; // 5 minutes timeout
 
@@ -22,22 +22,28 @@ export async function GET() {
     // 1. Fetch CSV Data
     console.log("Fetching Google Sheet CSV...");
     const csvResponse = await fetch(SHEET_URL, { cache: 'no-store' });
-    
     if (!csvResponse.ok) throw new Error(`Failed to fetch CSV: ${csvResponse.status}`);
-    
     const csvText = await csvResponse.text();
 
     // 2. Parse CSV
     const records = parse(csvText, {
-      columns: true, // Use the header row (Row 1) as keys
+      columns: true, 
       skip_empty_lines: true,
       trim: true,
     });
 
-    // Filter for "Live" status only
-    const liveTools = records.filter((r: any) => r['Status']?.trim() === 'Live');
+    // DEBUG: Log the first row to see what columns we actually have
+    if (records.length > 0) {
+      console.log("✅ CSV Columns Detected:", Object.keys(records[0]));
+      console.log("✅ First Row Sample:", records[0]);
+    } else {
+      console.error("❌ CSV appears to be empty or failed to parse headers.");
+    }
 
-    console.log(`Found ${liveTools.length} live tools (out of ${records.length} total).`);
+    // REMOVED FILTER: We now process ALL rows to ensure data gets in
+    const liveTools = records;
+
+    console.log(`Found ${liveTools.length} tools total. Starting processing...`);
 
     // Helper
     const slugify = (text: string) => text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
@@ -50,21 +56,40 @@ export async function GET() {
       const batch = liveTools.slice(i, i + BATCH_SIZE);
       
       const batchPromises = batch.map(async (record: any) => {
-        const name = record['Tool Name'];
+        // Flexible Name Check (Try "Tool Name", "Name", or "Tool")
+        const name = record['Tool Name'] || record['Name'] || record['Tool'];
         
         if (!name) return null;
 
-        // Map CSV columns to variables
+        // Map CSV columns
         const description = record['Description'] || '';
-        const category = record['Category'] || 'General';
-        const pricing = record['Pricing'] || 'Unknown';
+        const mainCategory = record['Main Category'] || record['Category'] || 'General';
+        const pricing = record['Pricing Model'] || record['Pricing'] || 'Unknown';
         const website = record['Website'] || '';
-        const imageUrl = record['Image'] || '';
+        // Handle various date formats or default to now
+        const launchDate = record['Date Added'] || new Date().toISOString();
         
+        // Extra metadata
+        const keyFeatures = record['Key Features'] || '';
+        const useCase = record['Use Case Summary'] || '';
+        const founder = record['Founder Name'] || '';
+
+        // Image Logic
+        const imageUrl = record['Image'] || `https://api.dicebear.com/7.x/initials/svg?seed=${name}`;
+
         // Generate Embedding
         let embedding = null;
         try {
-          const contentToEmbed = `${name}: ${description}. Category: ${category}. Pricing: ${pricing}`;
+          const contentToEmbed = `
+            Tool: ${name}. 
+            Description: ${description}. 
+            Category: ${mainCategory}. 
+            Pricing: ${pricing}. 
+            Features: ${keyFeatures}. 
+            Use Cases: ${useCase}. 
+            Founder: ${founder}.
+          `.trim();
+
           const embeddingResponse = await openai.embeddings.create({
             model: 'text-embedding-3-small',
             input: contentToEmbed,
@@ -75,22 +100,20 @@ export async function GET() {
           console.error(`Failed to embed ${name}`, e);
         }
 
-        // Create Unique ID based on Name (since CSV doesn't have a unique ID like Notion)
-        // We use a hash-like approach or just name for simplicity, but adding a random string ensures uniqueness if names duplicate
-        // Ideally, add an 'ID' column to your sheet, but we can generate one:
+        // Create Unique ID
         const notion_id = slugify(name) + '-csv'; 
         const slug = slugify(name);
 
         return {
-          notion_id: notion_id, // We keep the column name 'notion_id' in DB to avoid schema changes
+          notion_id, 
           name,
           slug,
           website,
           description,
-          main_category: category,
+          main_category: mainCategory,
           pricing_model: pricing,
           image_url: imageUrl,
-          launch_date: new Date().toISOString(), // CSV doesn't track date usually, so we default to now
+          launch_date: new Date(launchDate).toISOString(), // Ensure valid date format
           embedding
         };
       });
