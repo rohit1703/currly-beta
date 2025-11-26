@@ -36,13 +36,12 @@ export default async function Dashboard({
         });
         const queryEmbedding = embeddingResponse.data[0].embedding;
 
-        // 2. Search DB (RPC)
-        // Note: Threshold is -1 to force results even if low quality
-        const { data, error } = await supabase.rpc('match_tools', {
-          query_embedding: queryEmbedding,
-          match_threshold: -1, 
-          match_count: 20
-        });
+        // C. Search Supabase via RPC
+      const { data, error } = await supabase.rpc('match_tools', {
+        query_embedding: queryEmbedding,
+        match_threshold: 0.01, // Low threshold to ensure results
+        match_count: 20
+      });
 
         if (error) {
           debugError = `Supabase RPC Error: ${error.message}. Code: ${error.code}`;
