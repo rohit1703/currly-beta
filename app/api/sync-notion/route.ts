@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 
-export const maxDuration = 300; // Request 5-minute timeout (if on Vercel Pro)
+export const maxDuration = 300; // 5 minutes timeout
 
 export async function GET() {
   const NOTION_KEY = process.env.NOTION_SECRET_KEY;
@@ -21,13 +21,14 @@ export async function GET() {
 
     let allTools: any[] = [];
     let hasMore = true;
-    let startCursor = undefined;
+    let startCursor: string | undefined = undefined;
 
     // 1. Fetch ALL pages from Notion (Pagination Loop)
     console.log("Starting Notion Fetch...");
     
     while (hasMore) {
-      const response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
+      // RENAMED variable from 'response' to 'notionRes' to fix TypeScript build error
+      const notionRes = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${NOTION_KEY}`,
@@ -40,27 +41,25 @@ export async function GET() {
             select: { equals: 'Live' }
           },
           start_cursor: startCursor,
-          page_size: 100 // Max allowed by Notion
+          page_size: 100
         }),
       });
 
-      if (!response.ok) throw new Error(`Notion error: ${response.status}`);
+      if (!notionRes.ok) throw new Error(`Notion error: ${notionRes.status}`);
       
-      const data = await response.json();
+      const data = await notionRes.json();
       allTools = [...allTools, ...data.results];
       hasMore = data.has_more;
-      startCursor = data.next_cursor;
+      startCursor = data.next_cursor ?? undefined; // Ensure explicit undefined if null
       
       console.log(`Fetched ${allTools.length} tools so far...`);
     }
 
     console.log(`Finished fetching. Total Tools: ${allTools.length}`);
 
-    // Helper
     const slugify = (text: string) => text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
 
-    // 2. Process & Embed in Batches (To avoid rate limits/timeouts)
-    // We process 10 items at a time
+    // 2. Process & Embed in Batches
     const BATCH_SIZE = 10;
     const processedTools = [];
 
@@ -70,14 +69,13 @@ export async function GET() {
       const batchPromises = batch.map(async (page: any) => {
         const props = page.properties;
         const name = props['Tool Name']?.title?.[0]?.plain_text || 'Untitled';
+        
+        if (name === 'Untitled') return null;
+
         const description = props['Description']?.rich_text?.[0]?.plain_text || '';
         const category = props['Main Category']?.select?.name || '';
         const pricing = props['Pricing Model']?.select?.name || '';
         
-        // Skip embedding if name is Untitled
-        if (name === 'Untitled') return null;
-
-        // AI Embedding
         let embedding = null;
         try {
           const contentToEmbed = `${name}: ${description}. Category: ${category}. Pricing: ${pricing}`;
@@ -91,8 +89,7 @@ export async function GET() {
           console.error(`Failed to embed ${name}`, e);
         }
 
-        // Unique Slug
-        const slug = `${slugify(name)}-${page.id.slice(0, 6)}`; // Short ID suffix
+        const slug = `${slugify(name)}-${page.id.slice(0, 6)}`;
 
         return {
           notion_id: page.id,
@@ -109,31 +106,4 @@ export async function GET() {
       });
 
       const results = await Promise.all(batchPromises);
-      processedTools.push(...results.filter(t => t !== null));
-      console.log(`Processed ${Math.min(i + BATCH_SIZE, allTools.length)}/${allTools.length}`);
-    }
-
-    // 3. Upsert to Supabase
-    if (processedTools.length > 0) {
-      // Upsert in chunks of 50 to be safe
-      for (let i = 0; i < processedTools.length; i += 50) {
-        const chunk = processedTools.slice(i, i + 50);
-        const { error } = await supabase
-          .from('tools')
-          .upsert(chunk, { onConflict: 'notion_id' });
-        
-        if (error) throw error;
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      count: processedTools.length,
-      message: `Synced & Embedded ${processedTools.length} tools.`
-    });
-
-  } catch (error: any) {
-    console.error('Sync failed:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
-}
+      processedTools
