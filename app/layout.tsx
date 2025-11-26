@@ -26,11 +26,6 @@ export const metadata: Metadata = {
   description: 'Discover 700+ AI tools curated by experts. No affiliate bias, just honest reviews.',
   keywords: ['AI tools', 'SaaS', 'software discovery', 'artificial intelligence', 'tech stack'],
   authors: [{ name: 'Rohit Bangaram' }, { name: 'Ashish Singh' }],
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
-  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -45,6 +40,7 @@ export const metadata: Metadata = {
     description: 'Stop searching. Start building. 700+ AI tools curated by experts.',
     creator: '@currly',
   },
+  // Removed 'icons' block - Next.js handles app/icon.png automatically
 };
 
 export default function RootLayout({
