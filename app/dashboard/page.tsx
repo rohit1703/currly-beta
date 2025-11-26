@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import ToolCard from '@/components/ToolCardItem'; 
 import Link from 'next/link';
-import { Search, ArrowLeft, Sparkles } from 'lucide-react';
+import { Search, ArrowLeft, Sparkles, AlertTriangle } from 'lucide-react';
 import OpenAI from 'openai';
 
 export default async function Dashboard({
@@ -13,52 +13,59 @@ export default async function Dashboard({
   const params = await searchParams;
   const query = params.q || '';
 
-  // 1. Initialize Clients
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
   
   let tools: any[] = [];
   let searchMethod = "Latest";
+  let debugError = ""; // Capture errors to show on UI
 
-  // 2. Search Logic
   if (query) {
     searchMethod = "AI Semantic Match";
     
-    // A. Initialize OpenAI
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    if (!process.env.OPENAI_API_KEY) {
+      debugError = "Configuration Error: OPENAI_API_KEY is missing in Vercel.";
+    } else {
+      try {
+        // 1. Get Vector
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const embeddingResponse = await openai.embeddings.create({
+          model: 'text-embedding-3-small',
+          input: query,
+          encoding_format: 'float',
+        });
+        const queryEmbedding = embeddingResponse.data[0].embedding;
 
-    try {
-      // B. Convert Query to Vector
-      const embeddingResponse = await openai.embeddings.create({
-        model: 'text-embedding-3-small',
-        input: query,
-        encoding_format: 'float',
-      });
-      const queryEmbedding = embeddingResponse.data[0].embedding;
+        // 2. Search DB (RPC)
+        // Note: Threshold is -1 to force results even if low quality
+        const { data, error } = await supabase.rpc('match_tools', {
+          query_embedding: queryEmbedding,
+          match_threshold: -1, 
+          match_count: 20
+        });
 
-      // C. Search Supabase via RPC (Vector Match)
-      const { data, error } = await supabase.rpc('match_tools', {
-        query_embedding: queryEmbedding,
-        match_threshold: -1, // Lower threshold to allow broader matches
-        match_count: 20
-      });
+        if (error) {
+          debugError = `Supabase RPC Error: ${error.message}. Code: ${error.code}`;
+          throw error; // Trigger fallback
+        }
+        
+        tools = data || [];
 
-      if (error) throw error;
-      tools = data || [];
-
-    } catch (err) {
-      console.error("Vector search failed, falling back to text:", err);
-      // Fallback to text search if OpenAI fails
-      const { data } = await supabase
-        .from('tools')
-        .select('*')
-        .or(`name.ilike.%${query}%,description.ilike.%${query}%,main_category.ilike.%${query}%`)
-        .limit(20);
-      tools = data || [];
+      } catch (err: any) {
+        console.error("Search failed:", err);
+        // If we haven't set a specific error message yet, use the generic one
+        if (!debugError) debugError = `Search Failure: ${err.message || JSON.stringify(err)}`;
+        
+        // Fallback to basic text search
+        const { data } = await supabase
+          .from('tools')
+          .select('*')
+          .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+          .limit(20);
+        tools = data || [];
+      }
     }
-
   } else {
-    // Default: Show Latest
     const { data } = await supabase
       .from('tools')
       .select('*')
@@ -112,6 +119,18 @@ export default async function Dashboard({
 
       {/* --- RESULTS GRID --- */}
       <main className="container mx-auto py-10 px-4">
+        
+        {/* DEBUG ERROR BOX (Only shows if something is broken) */}
+        {debugError && (
+          <div className="mb-8 rounded-xl border border-red-500/50 bg-red-500/10 p-4 text-red-600 dark:text-red-400">
+            <div className="flex items-center gap-2 font-bold mb-1">
+              <AlertTriangle className="h-5 w-5" />
+              System Error
+            </div>
+            <p className="text-sm font-mono">{debugError}</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {tools?.map((tool) => (
             <ToolCard 
