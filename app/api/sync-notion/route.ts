@@ -27,7 +27,8 @@ export async function GET() {
     console.log("Starting Notion Fetch...");
     
     while (hasMore) {
-      const notionRes = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
+      // FIX: Explicitly type ': Response' to prevent TypeScript inference error
+      const res: Response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${NOTION_KEY}`,
@@ -44,9 +45,9 @@ export async function GET() {
         }),
       });
 
-      if (!notionRes.ok) throw new Error(`Notion error: ${notionRes.status}`);
+      if (!res.ok) throw new Error(`Notion error: ${res.status}`);
       
-      const data = await notionRes.json();
+      const data = await res.json();
       allTools = [...allTools, ...data.results];
       hasMore = data.has_more;
       startCursor = data.next_cursor ?? undefined;
@@ -105,7 +106,6 @@ export async function GET() {
       });
 
       const results = await Promise.all(batchPromises);
-      // Filter out nulls and push to main array
       const validResults = results.filter(t => t !== null);
       processedTools.push(...validResults);
       
