@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { Search, Loader2, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, Clock, Loader2, Globe, Sparkles } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import UserNav from '@/components/UserNav';
@@ -10,6 +9,7 @@ import MobileMenu from '@/components/MobileMenu';
 import ToolCard from '@/components/ToolCardItem';
 import AISearchSummary from '@/components/AISearchSummary';
 import AdoptionModal from '@/components/AdoptionModal';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function DashboardClient({ 
   initialTools, 
@@ -18,15 +18,43 @@ export default function DashboardClient({
   initialTools: any[], 
   searchQuery: string 
 }) {
+  // FILTER STATE
   const [indiaOnly, setIndiaOnly] = useState(false);
   const [priceFilter, setPriceFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState('All');
   
+  // INTERACTION STATE
   const [compareList, setCompareList] = useState<any[]>([]);
   const [selectedTool, setSelectedTool] = useState<any>(null);
   const [isAdoptionOpen, setIsAdoptionOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
 
-  // Client-side filtering (Region/Price) on top of Server results
+  // LOADING ANIMATION STATE
+  const [isSearching, setIsSearching] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const loadingTexts = ["Analyzing intent...", "Vectorizing query...", "Scanning 1,700+ tools...", "Ranking by relevance..."];
+
+  // Cycle through loading texts
+  useEffect(() => {
+    if (isSearching) {
+      const interval = setInterval(() => {
+        setLoadingStep((prev) => (prev + 1) % loadingTexts.length);
+      }, 800);
+      return () => clearInterval(interval);
+    }
+  }, [isSearching]);
+
+  // Stop loading when new data arrives (initialTools changes)
+  useEffect(() => {
+    setIsSearching(false);
+  }, [initialTools]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    // The form actually submits to the server, but we trigger the visual loading state here
+    setIsSearching(true);
+  };
+
+  // Client-side filtering
   const filteredTools = initialTools.filter(tool => {
     if (indiaOnly && !tool.is_india_based) return false;
     
@@ -44,6 +72,18 @@ export default function DashboardClient({
 
     return true;
   });
+
+  const getLogo = (tool: any) => {
+    if (tool.logo_url) return tool.logo_url;
+    if (tool.website_url) {
+      try {
+        let url = tool.website_url;
+        if (!url.startsWith('http')) url = `https://${url}`;
+        return `https://logo.clearbit.com/${new URL(url).hostname}`;
+      } catch (e) { return null; }
+    }
+    return null;
+  };
 
   const toggleCompare = (tool: any) => {
     if (compareList.find(t => t.id === tool.id)) {
@@ -89,35 +129,19 @@ export default function DashboardClient({
           ))}
         </div>
       </div>
-
-      {/* CATEGORIES */}
-      <div>
-        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Categories</div>
-        <div className="space-y-1">
-          {['All', 'Marketing', 'Development', 'Design', 'Productivity', 'Video', 'Finance'].map(cat => (
-              <button 
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${categoryFilter === cat ? 'bg-[#0066FF]/10 text-[#0066FF]' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5'}`}
-              >
-                {cat}
-              </button>
-          ))}
-        </div>
-      </div>
       
-       <div className="mt-8 p-5 bg-[#0066FF]/5 dark:bg-blue-900/10 rounded-2xl border border-[#0066FF]/10">
+      <div className="mt-8 p-5 bg-[#0066FF]/5 dark:bg-blue-900/10 rounded-2xl border border-[#0066FF]/10">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <div className="text-xs text-[#0066FF] font-bold uppercase tracking-wider">Live Status</div>
           </div>
-          <div className="text-lg font-bold text-[#1A1A1A] dark:text-white">712+ Tools</div>
+          <div className="text-lg font-bold text-[#1A1A1A] dark:text-white">1,702 Tools</div>
        </div>
     </div>
   );
 
   return (
-    <div className="flex h-screen bg-[#FDFBF7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans transition-colors duration-500">
+    <div className="flex h-screen bg-[#F5F5F7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans transition-colors duration-500">
       
       <aside className="w-72 border-r border-gray-200/50 dark:border-white/10 p-6 flex flex-col gap-8 hidden md:flex bg-white/50 dark:bg-[#0A0A0A] backdrop-blur-xl overflow-y-auto">
         <Link href="/">
@@ -126,90 +150,103 @@ export default function DashboardClient({
         <SidebarContent />
       </aside>
 
-      <main className="flex-1 flex flex-col min-w-0 relative bg-[#FDFBF7] dark:bg-[#050505]">
+      <main className="flex-1 flex flex-col min-w-0 relative bg-[#F5F5F7] dark:bg-[#050505]">
         
-        <header className="h-20 md:h-24 border-b border-gray-200/50 dark:border-white/10 flex items-center justify-between px-4 md:px-10 gap-4 bg-white/60 dark:bg-[#050505]/80 backdrop-blur-xl z-10 sticky top-0">
-          <MobileMenu>
-             <SidebarContent />
-          </MobileMenu>
+        {/* --- NEW HEADER (Video Style) --- */}
+        <header className="border-b border-gray-200/50 dark:border-white/10 bg-white/60 dark:bg-[#050505]/80 backdrop-blur-xl z-10 sticky top-0">
+          <div className="px-4 md:px-10 py-4">
+            <div className="flex items-center justify-between mb-4">
+               <div className="md:hidden"><MobileMenu><SidebarContent /></MobileMenu></div>
+               <div className="flex items-center gap-4 ml-auto">
+                  <ThemeToggle />
+                  <UserNav />
+               </div>
+            </div>
 
-          <div className="flex items-center gap-4 flex-1 max-w-3xl bg-white dark:bg-[#111] p-2 md:p-3 rounded-2xl border border-gray-200 dark:border-white/10 focus-within:border-[#0066FF]/50 focus-within:shadow-lg transition-all shadow-sm">
-            <Search className="w-5 h-5 text-gray-400 ml-2" />
-            <form action="/dashboard" className="w-full">
-                <input 
-                name="q"
-                type="text" 
-                placeholder="Search for 'video editor'..." 
-                defaultValue={searchQuery}
-                className="bg-transparent border-none outline-none text-base md:text-lg text-[#1A1A1A] dark:text-white w-full placeholder-gray-400"
-                />
-            </form>
-          </div>
+            {/* Tabs */}
+            <div className="flex justify-center gap-6 mb-4 text-sm font-medium">
+               <button 
+                 onClick={() => setActiveTab('search')}
+                 className={`pb-2 border-b-2 transition-colors ${activeTab === 'search' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
+               >
+                 <Search className="w-4 h-4 inline mr-2" /> Search Tools
+               </button>
+               <button 
+                 onClick={() => setActiveTab('browse')}
+                 className={`pb-2 border-b-2 transition-colors ${activeTab === 'browse' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
+               >
+                 <LayoutGrid className="w-4 h-4 inline mr-2" /> Browse Categories
+               </button>
+            </div>
 
-          <div className="flex items-center gap-2 md:gap-4">
-             <ThemeToggle />
-             <UserNav />
+            {/* The Search Input */}
+            {activeTab === 'search' && (
+              <div className="max-w-2xl mx-auto relative">
+                 <form action="/dashboard" onSubmit={handleSearchSubmit} className="relative">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[#0066FF] to-cyan-500 rounded-full opacity-20 blur"></div>
+                    <div className="relative flex items-center bg-white dark:bg-[#111] rounded-full shadow-lg p-1 pl-5">
+                       <Search className="w-5 h-5 text-gray-400 mr-3" />
+                       <input 
+                         name="q"
+                         type="text" 
+                         defaultValue={searchQuery}
+                         placeholder="Describe your problem (e.g. 'I need to automate invoices')..."
+                         className="flex-1 bg-transparent border-none outline-none text-base text-[#1A1A1A] dark:text-white placeholder-gray-400 h-12"
+                       />
+                       <button type="submit" className="bg-[#0066FF] hover:bg-[#0052CC] text-white px-6 py-2.5 rounded-full font-bold transition-all">
+                         Search
+                       </button>
+                    </div>
+                 </form>
+                 
+                 {/* Loading Animation Overlay */}
+                 <AnimatePresence>
+                   {isSearching && (
+                     <motion.div 
+                       initial={{ opacity: 0, y: 10 }} 
+                       animate={{ opacity: 1, y: 0 }} 
+                       exit={{ opacity: 0 }}
+                       className="absolute top-full left-0 w-full mt-4 flex justify-center"
+                     >
+                        <div className="bg-black/80 text-white px-4 py-2 rounded-full flex items-center gap-3 backdrop-blur-md text-sm font-medium shadow-xl">
+                           <Loader2 className="w-4 h-4 animate-spin text-[#0066FF]" />
+                           <motion.span
+                             key={loadingStep}
+                             initial={{ opacity: 0, y: 5 }}
+                             animate={{ opacity: 1, y: 0 }}
+                             exit={{ opacity: 0, y: -5 }}
+                           >
+                             {loadingTexts[loadingStep]}
+                           </motion.span>
+                        </div>
+                     </motion.div>
+                   )}
+                 </AnimatePresence>
+              </div>
+            )}
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-10 scroll-smooth">
           
-          {searchQuery && (
+          {/* AI Summary */}
+          {!isSearching && searchQuery && (
              <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
                <AISearchSummary query={searchQuery} tools={filteredTools} />
              </div>
           )}
 
-          {!searchQuery && categoryFilter === 'All' && (
-             <div className="mb-12 hidden md:block">
-                <h2 className="text-xl font-bold mb-6 text-[#1A1A1A] dark:text-white">Curated Collections</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                   {['Top Marketing Tools', 'Made in India', 'Startup Essentials'].map(c => (
-                      <div key={c} className="h-32 rounded-[2rem] bg-gradient-to-br from-[#0066FF] to-[#00D9FF] p-6 flex items-end text-white font-bold text-lg cursor-pointer hover:scale-[1.02] transition-transform shadow-lg">
-                        {c}
-                      </div>
-                   ))}
-                </div>
-             </div>
-          )}
-
+          {/* Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-32">
-            {filteredTools.map((tool) => (
-                <div key={tool.id} className="group bg-white dark:bg-[#111] border border-gray-100 dark:border-white/5 rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="w-14 h-14 bg-[#FDFBF7] dark:bg-black rounded-2xl p-2 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-inner overflow-hidden">
-                      <img src={tool.image_url || `https://api.dicebear.com/7.x/initials/svg?seed=${tool.name}`} className="w-full h-full object-contain rounded-lg" />
-                    </div>
-                    <span className="text-[10px] font-bold px-3 py-1 rounded-full border tracking-wide bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/5 text-gray-500">
-                      {tool.pricing_model || 'PAID'}
-                    </span>
-                  </div>
-                  <h3 className="font-bold text-lg md:text-xl mb-2 text-[#1A1A1A] dark:text-white">{tool.name}</h3>
-                  <div className="flex items-center gap-4 text-xs text-gray-500 font-medium mb-4">
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 15m setup</span>
-                      {tool.is_india_based && <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded"><MapPin className="w-3 h-3" /> India</span>}
-                  </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 line-clamp-2 leading-relaxed flex-grow">{tool.description}</p>
-                  <div className="grid grid-cols-2 gap-3 mt-auto">
-                    <button onClick={() => toggleCompare(tool)} className="bg-white dark:bg-black hover:bg-gray-50 border border-gray-200 dark:border-white/20 text-xs font-bold py-3 rounded-xl transition-colors text-[#1A1A1A] dark:text-white">Compare</button>
-                    <button onClick={() => { setSelectedTool(tool); setIsAdoptionOpen(true); }} className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-500/20">Test Demo <Zap className="w-3 h-3" /></button>
-                  </div>
-                </div>
-            ))}
-          </div>
+            {filteredTools.map((tool) => {
+                const logo = getLogo(tool);
+                const isSelected = compareList.find(t => t.id === tool.id);
 
-          {/* Floating Compare */}
-          {compareList.length > 0 && (
-             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#1A1A1A] text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-10 border border-white/10 w-[90%] md:w-auto justify-between md:justify-start">
-                <span className="font-bold text-sm">{compareList.length} Selected</span>
-                <button className="text-sm font-bold hover:text-[#0066FF]">Compare Now</button>
-                <button onClick={() => setCompareList([])}><X className="w-4 h-4" /></button>
-             </div>
-          )}
-        </div>
-
-        <AdoptionModal isOpen={isAdoptionOpen} onClose={() => setIsAdoptionOpen(false)} toolName={selectedTool?.name} demoUrl={selectedTool?.demo_video_url} />
-      </main>
-    </div>
-  );
-}
+                return (
+                  <div key={tool.id} className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col`}>
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-14 h-14 bg-[#FDFBF7] dark:bg-black rounded-2xl p-2 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-inner overflow-hidden">
+                        {logo ? (
+                          <img src={logo} alt={tool.name} className="w-full h-full object-contain rounded-lg" onError={(e) => {e.currentTarget.style.display='none'}} />
+                        ) : (
+                          <span className="text-xl font
