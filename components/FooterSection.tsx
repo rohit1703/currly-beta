@@ -5,7 +5,6 @@ import { Twitter, Linkedin, Github, Mail } from 'lucide-react';
 const footerLinks = {
   Company: [
     { label: 'About Us', href: '/about' },
-    // Removed Community link as requested
     { label: 'Contact', href: 'mailto:founders@currly.ai' },
   ],
   Legal: [
@@ -26,7 +25,7 @@ export function Footer() {
               <Logo />
             </Link>
             <p className="mb-8 text-sm text-gray-600 dark:text-gray-400 leading-relaxed max-w-xs">
-              Your AI-powered compass for discovering and comparing the best SaaS tools. Making software decisions simpler.
+              Your AI-powered compass for discovering and comparing the best SaaS tools.
             </p>
             <div className="flex gap-4">
               <a href="#" className="p-2 rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
@@ -34,12 +33,6 @@ export function Footer() {
               </a>
               <a href="#" className="p-2 rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 <Linkedin className="h-4 w-4" />
-              </a>
-              <a href="#" className="p-2 rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                <Github className="h-4 w-4" />
-              </a>
-              <a href="mailto:hello@currly.ai" className="p-2 rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                <Mail className="h-4 w-4" />
               </a>
             </div>
           </div>
@@ -64,10 +57,8 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-16 pt-8 border-t border-gray-200 dark:border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
           <p>© 2025 Currly. All rights reserved.</p>
-          <div className="flex items-center gap-1">
-            <span>Made with</span>
-            <span className="text-red-500">❤️</span>
-            <span>for founders</span>
+          <div className="flex items-center gap-1 font-medium">
+            <span>Discover & Build with Currly</span>
           </div>
         </div>
       </div>
