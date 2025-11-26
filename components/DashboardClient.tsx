@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Search, CheckSquare, Square, X, ArrowRight, Zap, MapPin, Clock, Loader2, Globe, Sparkles, LayoutGrid } from 'lucide-react';
+import { Search, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, Clock, Loader2, Globe, Sparkles, LayoutGrid, Code, PenTool, BarChart3, MessageSquare, Edit } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import UserNav from '@/components/UserNav';
@@ -11,6 +10,18 @@ import ToolCard from '@/components/ToolCardItem';
 import AISearchSummary from '@/components/AISearchSummary';
 import AdoptionModal from '@/components/AdoptionModal';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Categories Data for Browse Mode
+const BROWSE_CATEGORIES = [
+  { name: "Marketing", icon: Zap, count: "120+" },
+  { name: "Development", icon: Code, count: "85+" },
+  { name: "Design", icon: PenTool, count: "94+" },
+  { name: "Productivity", icon: LayoutGrid, count: "200+" },
+  { name: "Analytics", icon: BarChart3, count: "45+" },
+  { name: "Chatbots", icon: MessageSquare, count: "60+" },
+  { name: "Writing", icon: Edit, count: "70+" },
+  { name: "Video", icon: Globe, count: "50+" },
+];
 
 export default function DashboardClient({ 
   initialTools, 
@@ -35,7 +46,6 @@ export default function DashboardClient({
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingTexts = ["Analyzing intent...", "Vectorizing query...", "Scanning 1,700+ tools...", "Ranking by relevance..."];
 
-  // Cycle through loading texts
   useEffect(() => {
     if (isSearching) {
       const interval = setInterval(() => {
@@ -45,7 +55,6 @@ export default function DashboardClient({
     }
   }, [isSearching]);
 
-  // Stop loading when new data arrives
   useEffect(() => {
     setIsSearching(false);
   }, [initialTools]);
@@ -94,7 +103,12 @@ export default function DashboardClient({
     }
   };
 
-  // REUSABLE SIDEBAR CONTENT
+  // Function to handle category selection from Browse tab
+  const selectCategory = (catName: string) => {
+    setCategoryFilter(catName);
+    setActiveTab('search'); // Switch back to search/results view
+  };
+
   const SidebarContent = () => (
     <div className="space-y-8">
       <div>
@@ -142,7 +156,6 @@ export default function DashboardClient({
   return (
     <div className="flex h-screen bg-[#F5F5F7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans transition-colors duration-500">
       
-      {/* DESKTOP SIDEBAR */}
       <aside className="w-72 border-r border-gray-200/50 dark:border-white/10 p-6 flex flex-col gap-8 hidden md:flex bg-white/50 dark:bg-[#0A0A0A] backdrop-blur-xl overflow-y-auto">
         <Link href="/">
           <Logo />
@@ -150,41 +163,39 @@ export default function DashboardClient({
         <SidebarContent />
       </aside>
 
-      {/* MAIN CONTENT */}
       <main className="flex-1 flex flex-col min-w-0 relative bg-[#F5F5F7] dark:bg-[#050505]">
         
-        {/* HEADER (Merged Mobile Menu + Search Tabs) */}
-        <header className="border-b border-gray-200/50 dark:border-white/10 bg-white/60 dark:bg-[#050505]/80 backdrop-blur-xl z-10 sticky top-0">
-          <div className="px-4 md:px-10 py-4">
-            <div className="flex items-center justify-between mb-4">
-               {/* Mobile Menu Trigger */}
-               <div className="md:hidden"><MobileMenu><SidebarContent /></MobileMenu></div>
-               
-               <div className="flex items-center gap-4 ml-auto">
-                  <ThemeToggle />
-                  <UserNav />
-               </div>
-            </div>
+        <header className="h-auto min-h-[80px] border-b border-gray-200/50 dark:border-white/10 flex flex-col justify-center px-4 md:px-10 gap-4 bg-white/60 dark:bg-[#050505]/80 backdrop-blur-xl z-10 sticky top-0 pt-4 pb-2">
+          <div className="flex items-center justify-between w-full">
+             <div className="md:hidden"><MobileMenu><SidebarContent /></MobileMenu></div>
+             <div className="flex items-center gap-4 ml-auto">
+                <ThemeToggle />
+                <UserNav />
+             </div>
+          </div>
 
-            {/* SEARCH TABS */}
-            <div className="flex justify-center gap-6 mb-4 text-sm font-medium">
-               <button 
-                 onClick={() => setActiveTab('search')}
-                 className={`pb-2 border-b-2 transition-colors ${activeTab === 'search' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
-               >
-                 <Search className="w-4 h-4 inline mr-2" /> Search Tools
-               </button>
-               <button 
-                 onClick={() => setActiveTab('browse')}
-                 className={`pb-2 border-b-2 transition-colors ${activeTab === 'browse' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
-               >
-                 <LayoutGrid className="w-4 h-4 inline mr-2" /> Browse Categories
-               </button>
-            </div>
+          <div className="flex justify-center gap-8 text-sm font-medium w-full">
+             <button 
+               onClick={() => setActiveTab('search')}
+               className={`pb-3 border-b-2 transition-colors px-2 ${activeTab === 'search' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
+             >
+               <Search className="w-4 h-4 inline mr-2" /> Search Tools
+             </button>
+             <button 
+               onClick={() => setActiveTab('browse')}
+               className={`pb-3 border-b-2 transition-colors px-2 ${activeTab === 'browse' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
+             >
+               <LayoutGrid className="w-4 h-4 inline mr-2" /> Browse Categories
+             </button>
+          </div>
+        </header>
 
-            {/* SEARCH INPUT (with Animation) */}
-            {activeTab === 'search' && (
-              <div className="max-w-2xl mx-auto relative">
+        <div className="flex-1 overflow-y-auto p-4 md:p-10 scroll-smooth">
+          
+          {/* --- SEARCH TAB CONTENT --- */}
+          {activeTab === 'search' && (
+            <>
+              <div className="max-w-2xl mx-auto relative mb-10">
                  <form action="/dashboard" onSubmit={handleSearchSubmit} className="relative">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-[#0066FF] to-cyan-500 rounded-full opacity-20 blur"></div>
                     <div className="relative flex items-center bg-white dark:bg-[#111] rounded-full shadow-lg p-1 pl-5">
@@ -202,7 +213,6 @@ export default function DashboardClient({
                     </div>
                  </form>
                  
-                 {/* Loading Animation */}
                  <AnimatePresence>
                    {isSearching && (
                      <motion.div 
@@ -211,7 +221,7 @@ export default function DashboardClient({
                        exit={{ opacity: 0 }}
                        className="absolute top-full left-0 w-full mt-4 flex justify-center"
                      >
-                        <div className="bg-black/80 text-white px-4 py-2 rounded-full flex items-center gap-3 backdrop-blur-md text-sm font-medium shadow-xl">
+                        <div className="bg-black/80 text-white px-6 py-3 rounded-full flex items-center gap-3 backdrop-blur-md text-sm font-medium shadow-xl">
                            <Loader2 className="w-4 h-4 animate-spin text-[#0066FF]" />
                            <motion.span
                              key={loadingStep}
@@ -226,49 +236,74 @@ export default function DashboardClient({
                    )}
                  </AnimatePresence>
               </div>
-            )}
-          </div>
-        </header>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-10 scroll-smooth">
-          
-          {/* AI SUMMARY */}
-          {!isSearching && searchQuery && (
-             <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
-               <AISearchSummary query={searchQuery} tools={filteredTools} />
-             </div>
+              {!isSearching && searchQuery && (
+                 <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
+                   <AISearchSummary query={searchQuery} tools={filteredTools} />
+                 </div>
+              )}
+
+              {!isSearching && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-32">
+                  {filteredTools.map((tool) => {
+                      const logo = getLogo(tool);
+                      const isSelected = compareList.find(t => t.id === tool.id);
+                      return (
+                        <div key={tool.id} className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col`}>
+                          <div className="flex justify-between items-start mb-6">
+                            <div className="w-14 h-14 bg-[#FDFBF7] dark:bg-black rounded-2xl p-2 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-inner overflow-hidden">
+                              <img src={logo || `https://api.dicebear.com/7.x/initials/svg?seed=${tool.name}`} className="w-full h-full object-contain rounded-lg" onError={(e) => {e.currentTarget.style.display='none'}} />
+                            </div>
+                            <span className={`text-[10px] font-bold px-3 py-1 rounded-full border tracking-wide ${tool.pricing_model?.toLowerCase().includes('free') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/5 text-gray-500'}`}>
+                              {tool.pricing_model || 'PAID'}
+                            </span>
+                          </div>
+                          <h3 className="font-bold text-lg md:text-xl mb-2 text-[#1A1A1A] dark:text-white">{tool.name}</h3>
+                          <div className="flex items-center gap-4 text-xs text-gray-500 font-medium mb-4">
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 15m setup</span>
+                              {tool.is_india_based && <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded"><MapPin className="w-3 h-3" /> India</span>}
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 line-clamp-2 leading-relaxed flex-grow">{tool.description}</p>
+                          <div className="grid grid-cols-2 gap-3 mt-auto">
+                            <button onClick={() => toggleCompare(tool)} className="bg-white dark:bg-black hover:bg-gray-50 border border-gray-200 dark:border-white/20 text-xs font-bold py-3 rounded-xl transition-colors text-[#1A1A1A] dark:text-white">Compare</button>
+                            <button onClick={() => { setSelectedTool(tool); setIsAdoptionOpen(true); }} className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-500/20">Test Demo <Zap className="w-3 h-3" /></button>
+                          </div>
+                        </div>
+                      );
+                  })}
+                </div>
+              )}
+            </>
           )}
 
-          {/* RESULTS */}
-          {!isSearching && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-32">
-              {filteredTools.map((tool) => {
-                  const logo = getLogo(tool);
-                  const isSelected = compareList.find(t => t.id === tool.id);
-                  return (
-                    <div key={tool.id} className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col`}>
-                      <div className="flex justify-between items-start mb-6">
-                        <div className="w-14 h-14 bg-[#FDFBF7] dark:bg-black rounded-2xl p-2 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-inner overflow-hidden">
-                          <img src={logo || `https://api.dicebear.com/7.x/initials/svg?seed=${tool.name}`} className="w-full h-full object-contain rounded-lg" onError={(e) => {e.currentTarget.style.display='none'}} />
-                        </div>
-                        <span className={`text-[10px] font-bold px-3 py-1 rounded-full border tracking-wide ${tool.pricing_model?.toLowerCase().includes('free') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/5 text-gray-500'}`}>
-                          {tool.pricing_model || 'PAID'}
-                        </span>
-                      </div>
-                      <h3 className="font-bold text-lg md:text-xl mb-2 text-[#1A1A1A] dark:text-white">{tool.name}</h3>
-                      <div className="flex items-center gap-4 text-xs text-gray-500 font-medium mb-4">
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 15m setup</span>
-                          {tool.is_india_based && <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded"><MapPin className="w-3 h-3" /> India</span>}
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 line-clamp-2 leading-relaxed flex-grow">{tool.description}</p>
-                      <div className="grid grid-cols-2 gap-3 mt-auto">
-                        <button onClick={() => toggleCompare(tool)} className="bg-white dark:bg-black hover:bg-gray-50 border border-gray-200 dark:border-white/20 text-xs font-bold py-3 rounded-xl transition-colors text-[#1A1A1A] dark:text-white">Compare</button>
-                        <button onClick={() => { setSelectedTool(tool); setIsAdoptionOpen(true); }} className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-500/20">Test Demo <Zap className="w-3 h-3" /></button>
-                      </div>
-                    </div>
-                  );
-              })}
+          {/* --- BROWSE TAB CONTENT (NEW) --- */}
+          {activeTab === 'browse' && (
+            <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+               <h2 className="text-2xl font-bold mb-8 text-center text-[#1A1A1A] dark:text-white">Browse by Category</h2>
+               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {BROWSE_CATEGORIES.map((cat, i) => (
+                    <button
+                      key={i}
+                      onClick={() => selectCategory(cat.name)}
+                      className="flex flex-col items-center justify-center p-8 rounded-[2rem] bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group"
+                    >
+                       <div className="w-12 h-12 bg-blue-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-[#0066FF] mb-4 group-hover:scale-110 transition-transform">
+                         <cat.icon className="w-6 h-6" />
+                       </div>
+                       <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">{cat.name}</h3>
+                       <p className="text-xs text-gray-500">{cat.count}</p>
+                    </button>
+                  ))}
+               </div>
             </div>
+          )}
+
+          {compareList.length > 0 && (
+             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#1A1A1A] text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-10 border border-white/10 w-[90%] md:w-auto justify-between md:justify-start">
+                <span className="font-bold text-sm">{compareList.length} Selected</span>
+                <button className="text-sm font-bold hover:text-[#0066FF]">Compare Now</button>
+                <button onClick={() => setCompareList([])}><X className="w-4 h-4" /></button>
+             </div>
           )}
         </div>
         <AdoptionModal isOpen={isAdoptionOpen} onClose={() => setIsAdoptionOpen(false)} toolName={selectedTool?.name} demoUrl={selectedTool?.demo_video_url} />
