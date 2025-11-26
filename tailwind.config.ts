@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: 'class', // Ensure dark mode is set
+  darkMode: 'class',
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -10,20 +10,19 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        // This sets Manrope as the default font for everything
+        // Registers the CSS variables we set in layout.tsx
         sans: ["var(--font-manrope)", "sans-serif"],
-        // This creates a 'font-heading' utility for Bodoni
         heading: ["var(--font-bodoni)", "serif"],
       },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        primary: "#0066FF", // Currly Electric Blue
+        primary: "#0066FF",
       },
     },
   },
   plugins: [
-    require('@tailwindcss/typography'), // Optional: Good for blog content
+    require('@tailwindcss/typography'),
   ],
 };
 export default config;
