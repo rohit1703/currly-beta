@@ -2,38 +2,81 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowUp, MessageCircle, Share2, Rocket, Layers, Zap, Plus, LayoutGrid } from 'lucide-react';
-import { supabase } from '@/utils/supabase';
+import { ArrowUp, MessageCircle, Share2, Rocket, Layers, Zap, Plus, LayoutGrid, Loader2 } from 'lucide-react';
+import { createBrowserClient } from '@supabase/ssr'; // Using the correct client we fixed
 import StackBuilder from '@/components/StackBuilder';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import UserNav from '@/components/UserNav';
-import { Logo } from '@/components/Logo'; // IMPORTED NEW LOGO
+import { Logo } from '@/components/Logo';
+
+const POSTS_PER_PAGE = 10;
 
 export default function FeedPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('pulse');
   const [isStackBuilderOpen, setIsStackBuilderOpen] = useState(false);
+  
+  // Pagination State
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    async function fetchPosts() {
-      const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
-      setPosts(data || []);
+  // Initialize Supabase
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  const fetchPosts = async (pageNumber: number) => {
+    try {
+      setIsLoading(true);
+      // Calculate range: 0-9, 10-19, etc.
+      const from = pageNumber * POSTS_PER_PAGE;
+      const to = from + POSTS_PER_PAGE - 1;
+
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+
+      if (data) {
+        if (data.length < POSTS_PER_PAGE) {
+          setHasMore(false); // No more posts to fetch
+        }
+        
+        setPosts(prev => (pageNumber === 0 ? data : [...prev, ...data]));
+      }
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    } finally {
+      setIsLoading(false);
     }
-    fetchPosts();
+  };
+
+  // Initial Load
+  useEffect(() => {
+    fetchPosts(0);
   }, []);
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPosts(nextPage);
+  };
 
   const filteredPosts = activeTab === 'pulse' ? posts : posts.filter(p => p.type === (activeTab === 'launches' ? 'launch' : 'stack'));
 
   return (
-    // THEME UPDATE: Force Cream/Dark background
     <div className="min-h-screen bg-[#FDFBF7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans flex flex-col items-center transition-colors duration-500">
       
       {/* HEADER NAVIGATION */}
       <nav className="w-full border-b border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-[#0A0A0A]/80 backdrop-blur p-4 flex justify-between items-center sticky top-0 z-20">
          <div className="flex items-center gap-6">
             <Link href="/">
-                {/* UPDATED: Using Master Logo */}
                 <Logo />
             </Link>
             <Link href="/dashboard" className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-[#0066FF] transition-colors">
@@ -46,7 +89,7 @@ export default function FeedPage() {
             <UserNav />
             <button 
               onClick={() => setIsStackBuilderOpen(true)}
-              className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-bold px-4 py-2 rounded-full flex items-center gap-2 transition-colors shadow-lg shadow-blue-500/20"
+              className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-bold px-4 py-2 rounded-full flex items-center gap-2 transition-colors shadow-md"
             >
               <Plus className="w-4 h-4" /> Create Stack
             </button>
@@ -71,7 +114,7 @@ export default function FeedPage() {
         </div>
 
         {/* FEED ITEMS */}
-        <div className="space-y-6 pb-32">
+        <div className="space-y-6 pb-10">
           {filteredPosts.map((item, index) => (
             <motion.div
               key={item.id}
@@ -89,7 +132,7 @@ export default function FeedPage() {
 
               <div className="p-6">
                 <div className="flex items-center gap-3 mb-3">
-                   <img src={item.author_avatar || 'https://i.pravatar.cc/150'} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/10" alt={item.author_name} />
+                   <img src={item.author_avatar || 'https://i.pravatar.cc/150'} className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/10" alt="Author" />
                    <div>
                      <h3 className="font-bold text-[#1A1A1A] dark:text-white leading-tight text-lg">{item.title}</h3>
                      <p className="text-xs text-gray-500">by {item.author_name} • {new Date(item.created_at).toLocaleDateString()}</p>
@@ -105,6 +148,24 @@ export default function FeedPage() {
               </div>
             </motion.div>
           ))}
+
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="flex justify-center pt-4 pb-8">
+              <button 
+                onClick={handleLoadMore}
+                disabled={isLoading}
+                className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-300 px-6 py-2 rounded-full text-sm font-bold hover:border-[#0066FF] hover:text-[#0066FF] transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {isLoading ? 'Loading...' : 'Load More'}
+              </button>
+            </div>
+          )}
+          
+          {!hasMore && posts.length > 0 && (
+            <p className="text-center text-gray-400 text-sm py-8">You've reached the end.</p>
+          )}
         </div>
       </div>
 

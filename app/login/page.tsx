@@ -2,14 +2,13 @@
 
 import { useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { Loader2 } from 'lucide-react'; // We'll use an SVG for Google
-import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react'; 
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
   
-  // Initialize Supabase Client (Client-side)
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -32,31 +31,40 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F5F5F7] dark:bg-black px-4">
-      <div className="w-full max-w-md bg-white dark:bg-[#111] p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-white/10 text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#F5F5F7] dark:bg-black px-4 relative">
+      
+      {/* Back Button */}
+      <Link 
+        href="/" 
+        className="absolute top-8 left-8 flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" /> Back to Home
+      </Link>
+
+      <div className="w-full max-w-md bg-white dark:bg-[#111] p-8 md:p-12 rounded-3xl shadow-xl border border-gray-100 dark:border-white/10 text-center">
         
-        {/* Logo & Header */}
+        {/* Logo */}
         <div className="mb-8">
-          <div className="w-12 h-12 bg-[#0066FF] rounded-xl flex items-center justify-center text-white font-bold text-2xl mx-auto mb-6 shadow-lg shadow-blue-500/30">
+          <div className="w-14 h-14 bg-[#0066FF] rounded-2xl flex items-center justify-center text-white font-bold text-2xl mx-auto mb-6 shadow-[0_0_30px_rgba(0,102,255,0.3)]">
             C
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Welcome back</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            Sign in to access your saved tools and community.
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Welcome to Currly</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-base">
+            Sign in to save your favorite AI tools and join the community.
           </p>
         </div>
 
-        {/* Google Button (The only working method) */}
+        {/* Google Button */}
         <button
           onClick={handleGoogleLogin}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 p-4 rounded-xl text-gray-700 dark:text-white font-bold hover:bg-gray-50 dark:hover:bg-white/10 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-3 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 p-4 rounded-xl text-gray-900 dark:text-white font-bold hover:bg-gray-50 dark:hover:bg-white/10 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
         >
           {isLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+            <Loader2 className="w-5 h-5 animate-spin text-[#0066FF]" />
           ) : (
             <>
-              {/* Google SVG Icon */}
+              {/* Google Icon */}
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -80,10 +88,11 @@ export default function LoginPage() {
           )}
         </button>
 
-        {/* Footer Note */}
-        <p className="mt-8 text-xs text-gray-400 dark:text-gray-600">
-          By signing in, you agree to our Terms and Privacy Policy.
-        </p>
+        <div className="mt-8 pt-6 border-t border-gray-100 dark:border-white/5">
+          <p className="text-xs text-gray-400">
+            By continuing, you agree to our Terms of Service and Privacy Policy.
+          </p>
+        </div>
       </div>
     </div>
   );
