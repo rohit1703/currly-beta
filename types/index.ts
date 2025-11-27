@@ -1,5 +1,5 @@
 export interface Tool {
-  id: number;
+  id: string | number;
   notion_id: string;
   slug: string;
   name: string;
@@ -9,21 +9,16 @@ export interface Tool {
   main_category: string;
   pricing_model: string;
   launch_date: string;
-  is_india_based: boolean; // Derived from Geographic Focus
+  is_india_based?: boolean;
   key_features?: string[];
   founder_name?: string;
   use_case?: string;
-  // embeddings are usually not needed on the frontend
+  embedding?: number[];
 }
 
 export interface Category {
   name: string;
   slug: string;
-  icon?: any; // Lucide icon component
+  icon?: any;
   count?: string;
-}
-
-export interface SearchResult {
-  tools: Tool[];
-  semanticQuery?: string; // The AI's interpretation of the search
 }
