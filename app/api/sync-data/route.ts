@@ -1,97 +1,91 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
+import { parse } from 'csv-parse/sync';
 
-// Allow 5 minutes for the sync to complete
-export const maxDuration = 300; 
+export const maxDuration = 300; // 5 minutes timeout
 
-export async function GET(request: Request) {
-  // --- 1. SECURITY CHECK (The Firewall) ---
-  // We check if the request has the correct "Authorization" header.
-  // This prevents random people from triggering your expensive API.
+// CHANGED: GET -> POST for security (prevent accidental triggers)
+export async function POST(request: Request) {
+  // --- 1. SECURITY GATE ---
   const authHeader = request.headers.get('authorization');
   
-  // We check against a new env variable 'CRON_SECRET'
-  // Note: We also allow it if we are in 'development' mode for easy testing
-  if (process.env.NODE_ENV !== 'development' && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // We require a specific Bearer token to run this script
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  const NOTION_KEY = process.env.NOTION_SECRET_KEY;
-  const DATABASE_ID = process.env.NOTION_DATABASE_ID;
+  const SHEET_URL = process.env.GOOGLE_SHEET_URL;
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
-  if (!NOTION_KEY || !SUPABASE_KEY || !DATABASE_ID || !OPENAI_KEY) {
-    return NextResponse.json({ success: false, error: 'Missing API Keys' }, { status: 500 });
+  if (!SHEET_URL || !SUPABASE_KEY || !OPENAI_KEY) {
+    return NextResponse.json({ success: false, error: 'Missing Server-Side Keys' }, { status: 500 });
   }
 
   try {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
     const openai = new OpenAI({ apiKey: OPENAI_KEY });
 
-    let allTools: any[] = [];
-    let hasMore = true;
-    let startCursor: string | undefined = undefined;
+    // 2. Fetch CSV Data
+    console.log("Fetching Google Sheet CSV...");
+    const csvResponse = await fetch(SHEET_URL, { cache: 'no-store' });
+    if (!csvResponse.ok) throw new Error(`Failed to fetch CSV: ${csvResponse.status}`);
+    const csvText = await csvResponse.text();
 
-    console.log("Starting Secure Notion Fetch...");
-    
-    while (hasMore) {
-      const notionRes: Response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${NOTION_KEY}`,
-          'Notion-Version': '2022-06-28',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          start_cursor: startCursor,
-          page_size: 100
-        }),
-      });
+    // 3. Parse CSV
+    const records = parse(csvText, {
+      columns: true, 
+      skip_empty_lines: true,
+      trim: true,
+    }) as any[];
 
-      if (!notionRes.ok) throw new Error(`Notion error: ${notionRes.status}`);
-      
-      const data = await notionRes.json();
-      allTools = [...allTools, ...data.results];
-      hasMore = data.has_more;
-      startCursor = data.next_cursor ?? undefined;
-    }
+    // Filter for "Live" status
+    // Note: Ensure your CSV column name matches exactly "Launch Status" or adjust here
+    const liveTools = records.filter((r: any) => r['Launch Status']?.trim() === 'Live');
+    console.log(`Found ${liveTools.length} live tools.`);
 
+    // Helper
     const slugify = (text: string) => text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
 
-    // Process & Embed
+    // 4. Process & Embed in Batches
     const BATCH_SIZE = 10;
     const processedTools: any[] = [];
 
-    for (let i = 0; i < allTools.length; i += BATCH_SIZE) {
-      const batch = allTools.slice(i, i + BATCH_SIZE);
-      const batchPromises = batch.map(async (page: any) => {
-        const props = page.properties;
-        const getTitle = (p: any) => p?.title?.[0]?.plain_text || 'Untitled';
-        const name = getTitle(props['Tool Name'] || props['Name']); 
+    for (let i = 0; i < liveTools.length; i += BATCH_SIZE) {
+      const batch = liveTools.slice(i, i + BATCH_SIZE);
+      
+      const batchPromises = batch.map(async (record: any) => {
+        const name = record['Tool Name'] || record['Name'];
+        if (!name) return null;
+
+        // Map CSV columns
+        const description = record['Description'] || '';
+        const mainCategory = record['Main Category'] || 'General';
+        const pricing = record['Pricing Model'] || 'Unknown';
+        const website = record['Website'] || '';
+        const launchDate = record['Date Added'] || new Date().toISOString();
         
-        if (name === 'Untitled' || !name) return null;
+        // Metadata for Embedding
+        const keyFeatures = record['Key Features'] || '';
+        const useCase = record['Use Case Summary'] || '';
+        const founder = record['Founder Name'] || '';
+        const imageUrl = record['Image'] || `https://api.dicebear.com/7.x/initials/svg?seed=${name}`;
 
-        const getText = (p: any) => p?.rich_text?.[0]?.plain_text || '';
-        const getSelect = (p: any) => p?.select?.name || '';
-        const getUrl = (p: any) => p?.url || null;
-
-        const description = getText(props['Description']);
-        const category = getSelect(props['Main Category'] || props['Category']);
-        const pricing = getSelect(props['Pricing Model'] || props['Pricing']);
-        const website = getUrl(props['Website'] || props['URL']);
-        const launchDate = props['Date Added']?.date?.start || null;
-        
-        const imageProp = props['Image'] || props['Logo'];
-        const imageUrl = imageProp?.files?.[0]?.file?.url || imageProp?.files?.[0]?.external?.url || '';
-
-        // Only generate embedding if one doesn't exist? 
-        // For MVP we regenerate to ensure accuracy with new descriptions
+        // Generate Embedding
         let embedding = null;
         try {
-          const contentToEmbed = `${name}: ${description}. Category: ${category}. Pricing: ${pricing}`;
+          const contentToEmbed = `
+            Tool: ${name}. 
+            Description: ${description}. 
+            Category: ${mainCategory}. 
+            Pricing: ${pricing}. 
+            Features: ${keyFeatures}. 
+            Use Cases: ${useCase}. 
+            Founder: ${founder}.
+          `.trim();
+
           const embeddingResponse = await openai.embeddings.create({
             model: 'text-embedding-3-small',
             input: contentToEmbed,
@@ -102,32 +96,35 @@ export async function GET(request: Request) {
           console.error(`Failed to embed ${name}`, e);
         }
 
-        const slug = `${slugify(name)}-${page.id.slice(0, 6)}`;
+        const notion_id = slugify(name) + '-csv'; 
 
         return {
-          notion_id: page.id,
+          notion_id, 
           name,
-          slug,
+          slug: slugify(name),
           website,
           description,
-          main_category: category,
+          main_category: mainCategory,
           pricing_model: pricing,
           image_url: imageUrl,
-          launch_date: launchDate,
+          launch_date: new Date(launchDate).toISOString(),
           embedding
         };
       });
 
       const results = await Promise.all(batchPromises);
-      processedTools.push(...results.filter(t => t !== null));
+      const validResults = results.filter(t => t !== null);
+      processedTools.push(...validResults);
     }
 
+    // 5. Upsert to Supabase
     if (processedTools.length > 0) {
       for (let i = 0; i < processedTools.length; i += 50) {
         const chunk = processedTools.slice(i, i + 50);
         const { error } = await supabase
           .from('tools')
           .upsert(chunk, { onConflict: 'notion_id' });
+        
         if (error) throw error;
       }
     }
