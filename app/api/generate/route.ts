@@ -1,9 +1,22 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
+import { createClient } from '@/utils/supabase/server'; //
+import { cookies } from 'next/headers';
 
 export const runtime = 'edge';
 
 export async function POST(req: Request) {
+  // 1. Check Authentication
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+  
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    return new Response('Unauthorized: You must be logged in to use AI features.', { status: 401 });
+  }
+
+  // 2. Proceed with Generation
   const { prompt, context } = await req.json();
 
   const systemPrompt = `
@@ -24,6 +37,5 @@ export async function POST(req: Request) {
     prompt: prompt,
   });
 
-  // FIX: Use the method available in your current SDK version
   return result.toTextStreamResponse();
 }

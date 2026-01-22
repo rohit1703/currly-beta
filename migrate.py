@@ -1,14 +1,19 @@
 import os
 import pandas as pd
 from supabase import create_client, Client
-import json
-import re
+from dotenv import load_dotenv # You may need to run: pip install python-dotenv
+
+# Load environment variables from a .env file
+load_dotenv()
 
 # --- CONFIGURATION ---
-# Paste your credentials here again just to be safe
-SUPABASE_URL = "https://zlqjpyarahzqntjowlcg.supabase.co" 
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpscWpweWFyYWh6cW50am93bGNnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzY3MjM2NiwiZXhwIjoyMDc5MjQ4MzY2fQ.uzUwGW0LimWLqjsWSc3ph0LcvLlRk30BJADrsve6Bfc" 
+# Fetch from environment variables
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") # Use the NEW key here
 CSV_FILENAME = "currly_data.csv"
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("❌ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.")
 
 # Initialize Client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)

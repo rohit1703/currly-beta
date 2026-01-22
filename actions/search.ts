@@ -1,19 +1,19 @@
 'use server';
 
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@/utils/supabase/server'; //
 import { cookies } from 'next/headers';
 import OpenAI from 'openai';
-import { Tool } from '@/types';
+import { Tool } from '@/types'; //
 
 export async function searchTools(query: string): Promise<Tool[]> {
   if (!query) return [];
 
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
-  let tools: Tool[] = [];
 
   try {
     // 1. Try Semantic Search (Vector) if Key exists
+    // This part remains unchanged to keep your "hybrid" search power.
     if (process.env.OPENAI_API_KEY) {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       
@@ -30,16 +30,22 @@ export async function searchTools(query: string): Promise<Tool[]> {
         match_count: 20
       });
 
-      if (!error && data) {
+      // If vector search finds good matches, return them immediately
+      if (!error && data && data.length > 0) {
         return data as Tool[];
       }
     }
 
-    // 2. Fallback to Keyword Search (if OpenAI fails or returns 0)
+    // 2. Fallback to Full Text Search (Optimized)
+    // REPLACED: The old .or(ilike) query with .textSearch()
+    // This uses the 'fts' column index for vastly improved performance.
     const { data } = await supabase
       .from('tools')
       .select('*')
-      .or(`name.ilike.%${query}%,description.ilike.%${query}%,main_category.ilike.%${query}%`)
+      .textSearch('fts', query, {
+        type: 'websearch', // Supports operators like "quoted phrase" or -exclusion
+        config: 'english'
+      })
       .limit(20);
       
     return (data as Tool[]) || [];
