@@ -4,25 +4,35 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import OpenAI from 'openai';
 import { Tool } from '@/types';
+import { unstable_cache } from 'next/cache';
 
-// 1. FAST SEARCH (Text Only - Instant)
+// 1. FAST SEARCH (Text Only - Instant & Cached)
+// This is what the Page loads initially. It must be < 200ms.
 export async function quickSearch(query: string): Promise<Tool[]> {
   if (!query) return [];
-  
-  const supabase = createClient(await cookies());
-  const { data } = await supabase
-    .from('tools')
-    .select('*')
-    .textSearch('fts', query, {
-      type: 'websearch',
-      config: 'english'
-    })
-    .limit(20);
 
-  return (data as Tool[]) || [];
+  const getCachedText = unstable_cache(
+    async (q: string) => {
+      const supabase = createClient(await cookies());
+      const { data } = await supabase
+        .from('tools')
+        .select('*')
+        .textSearch('fts', q, {
+          type: 'websearch',
+          config: 'english'
+        })
+        .limit(20);
+      return (data as Tool[]) || [];
+    },
+    ['text-search'], 
+    { revalidate: 3600, tags: ['tools'] }
+  );
+
+  return getCachedText(query);
 }
 
 // 2. SMART SEARCH (Vector Only - Slow but Better)
+// This is what the Client calls in the background.
 export async function smartSearch(query: string): Promise<Tool[]> {
   if (!query || !process.env.OPENAI_API_KEY) return [];
 
@@ -30,6 +40,7 @@ export async function smartSearch(query: string): Promise<Tool[]> {
   const supabase = createClient(await cookies());
 
   try {
+    // This await is what causes the 1s+ delay
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: query,
@@ -51,8 +62,10 @@ export async function smartSearch(query: string): Promise<Tool[]> {
   }
 }
 
-// 3. Fallback for older components (Optional)
+// 3. Fallback / Legacy
 export async function searchTools(query: string): Promise<Tool[]> {
+  // We default to smart search for legacy calls, 
+  // but the UI should prefer splitting them.
   return smartSearch(query);
 }
 
