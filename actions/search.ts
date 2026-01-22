@@ -1,19 +1,25 @@
 'use server';
 
-import { createClient } from '@/utils/supabase/server';
+import { createClient as createServerClient } from '@/utils/supabase/server';
+import { createClient as createPublicClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import OpenAI from 'openai';
 import { Tool } from '@/types';
 import { unstable_cache } from 'next/cache';
 
-// 1. FAST SEARCH (Text Only - Instant & Cached)
-// This is what the Page loads initially. It must be < 200ms.
+// --- 1. FAST SEARCH (Text Only - Instant & Cached) ---
+// We use createPublicClient here because unstable_cache cannot access request cookies.
 export async function quickSearch(query: string): Promise<Tool[]> {
   if (!query) return [];
 
   const getCachedText = unstable_cache(
     async (q: string) => {
-      const supabase = createClient(await cookies());
+      // Initialize a basic client without cookies for caching public data
+      const supabase = createPublicClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
       const { data } = await supabase
         .from('tools')
         .select('*')
@@ -31,16 +37,16 @@ export async function quickSearch(query: string): Promise<Tool[]> {
   return getCachedText(query);
 }
 
-// 2. SMART SEARCH (Vector Only - Slow but Better)
-// This is what the Client calls in the background.
+// --- 2. SMART SEARCH (Vector Only - Slow but Better) ---
+// This is called dynamically by the client, so it can use the standard server client.
 export async function smartSearch(query: string): Promise<Tool[]> {
   if (!query || !process.env.OPENAI_API_KEY) return [];
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const supabase = createClient(await cookies());
+  const cookieStore = await cookies();
+  const supabase = createServerClient(cookieStore);
 
   try {
-    // This await is what causes the 1s+ delay
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: query,
@@ -62,15 +68,15 @@ export async function smartSearch(query: string): Promise<Tool[]> {
   }
 }
 
-// 3. Fallback / Legacy
+// --- 3. FALLBACK / UTILS ---
 export async function searchTools(query: string): Promise<Tool[]> {
-  // We default to smart search for legacy calls, 
-  // but the UI should prefer splitting them.
   return smartSearch(query);
 }
 
 export async function getLatestTools(limit: number = 50): Promise<Tool[]> {
-  const supabase = createClient(await cookies());
+  const cookieStore = await cookies();
+  const supabase = createServerClient(cookieStore);
+
   const { data } = await supabase
     .from('tools')
     .select('*')
