@@ -1,5 +1,5 @@
 import DashboardClient from '@/components/DashboardClient';
-import { searchTools, getLatestTools } from '@/actions/search';
+import { quickSearch, getLatestTools } from '@/actions/search'; // Import quickSearch
 
 export default async function Dashboard({
   searchParams,
@@ -12,10 +12,10 @@ export default async function Dashboard({
   let tools;
 
   if (query) {
-    // Use the new Server Action
-    tools = await searchTools(query);
+    // STRATEGY: Use Quick Search (Text) for immediate HTML render.
+    // The Client will assume responsibility for "upgrading" to Vector results.
+    tools = await quickSearch(query);
   } else {
-    // Use the new Server Action
     tools = await getLatestTools(50);
   }
 

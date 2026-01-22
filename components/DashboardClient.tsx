@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-// FIX: Added missing icons (Code, PenTool, BarChart3, MessageSquare, Edit) to imports
-import { Search, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, Clock, Loader2, Globe, Sparkles, LayoutGrid, Code, PenTool, BarChart3, MessageSquare, Edit } from 'lucide-react';
+import { 
+  Search, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, 
+  Clock, Loader2, Globe, Sparkles, LayoutGrid, Code, PenTool, 
+  BarChart3, MessageSquare, Edit 
+} from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import UserNav from '@/components/UserNav';
@@ -12,6 +15,8 @@ import ToolCard from '@/components/ToolCardItem';
 import AISearchSummary from '@/components/AISearchSummary';
 import AdoptionModal from '@/components/AdoptionModal';
 import { motion, AnimatePresence } from 'framer-motion';
+// NEW: Import the smart search action
+import { smartSearch } from '@/actions/search';
 
 export default function DashboardClient({ 
   initialTools, 
@@ -20,6 +25,13 @@ export default function DashboardClient({
   initialTools: any[], 
   searchQuery: string 
 }) {
+  // --- STATE ---
+  
+  // 1. DATA STATE: Start with fast server results, then update
+  const [tools, setTools] = useState(initialTools);
+  // 2. OPTIMISTIC STATE: Track if we are fetching better AI results
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
   // FILTER STATE
   const [indiaOnly, setIndiaOnly] = useState(false);
   const [priceFilter, setPriceFilter] = useState<string[]>([]);
@@ -31,12 +43,42 @@ export default function DashboardClient({
   const [isAdoptionOpen, setIsAdoptionOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
 
-  // LOADING ANIMATION STATE
+  // LOADING ANIMATION STATE (Legacy manual loading)
   const [isSearching, setIsSearching] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const loadingTexts = ["Analyzing intent...", "Vectorizing query...", "Scanning 1,700+ tools...", "Ranking by relevance..."];
 
-  // Cycle through loading texts
+  // --- EFFECTS ---
+
+  // 1. OPTIMISTIC UI: Trigger "Smart Search" in background
+  useEffect(() => {
+    // A. Reset tools when the query changes (shows fast text results first)
+    setTools(initialTools);
+    
+    // B. If there is a query, try to "upgrade" results with Vector Search
+    if (searchQuery) {
+      const upgradeResults = async () => {
+        setIsUpgrading(true);
+        try {
+          // Call the server action we exported earlier
+          const smartResults = await smartSearch(searchQuery);
+          
+          // Only update if AI found meaningful results
+          if (smartResults && smartResults.length > 0) {
+            setTools(smartResults);
+          }
+        } catch (e) {
+          console.error("AI Search upgrade failed, sticking to text results", e);
+        } finally {
+          setIsUpgrading(false);
+        }
+      };
+
+      upgradeResults();
+    }
+  }, [initialTools, searchQuery]);
+
+  // 2. Cycle through loading texts (Legacy)
   useEffect(() => {
     if (isSearching) {
       const interval = setInterval(() => {
@@ -46,7 +88,7 @@ export default function DashboardClient({
     }
   }, [isSearching]);
 
-  // Stop loading when new data arrives (initialTools changes)
+  // 3. Stop legacy loading when new data arrives
   useEffect(() => {
     setIsSearching(false);
   }, [initialTools]);
@@ -56,8 +98,9 @@ export default function DashboardClient({
     setIsSearching(true);
   };
 
-  // Client-side filtering
-  const filteredTools = initialTools.filter(tool => {
+  // --- FILTERING ---
+  // Client-side filtering (Applied to the CURRENT tools state)
+  const filteredTools = tools.filter(tool => {
     if (indiaOnly && !tool.is_india_based) return false;
     
     if (categoryFilter !== 'All') {
@@ -75,6 +118,7 @@ export default function DashboardClient({
     return true;
   });
 
+  // --- HELPERS ---
   const getLogo = (tool: any) => {
     if (tool.logo_url) return tool.logo_url;
     if (tool.website_url) {
@@ -96,7 +140,7 @@ export default function DashboardClient({
     }
   };
 
-  // REUSABLE SIDEBAR CONTENT
+  // --- SIDEBAR COMPONENT ---
   const SidebarContent = () => (
     <div className="space-y-8">
       <div>
@@ -141,6 +185,7 @@ export default function DashboardClient({
     </div>
   );
 
+  // --- RENDER ---
   return (
     <div className="flex h-screen bg-[#F5F5F7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans transition-colors duration-500">
       
@@ -207,6 +252,7 @@ export default function DashboardClient({
                     </div>
                  </form>
                  
+                 {/* LEGACY LOADING (Full screen blocking) */}
                  <AnimatePresence>
                    {isSearching && (
                      <motion.div 
@@ -229,16 +275,34 @@ export default function DashboardClient({
                      </motion.div>
                    )}
                  </AnimatePresence>
+
+                 {/* NEW: NON-BLOCKING AI INDICATOR (Shows when upgrading fast results) */}
+                 <AnimatePresence>
+                   {!isSearching && isUpgrading && (
+                     <motion.div 
+                       initial={{ opacity: 0, y: 5 }} 
+                       animate={{ opacity: 1, y: 0 }} 
+                       exit={{ opacity: 0 }}
+                       className="absolute -bottom-10 left-0 w-full flex justify-center"
+                     >
+                        <div className="flex items-center gap-2 text-xs font-medium text-[#0066FF] bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full border border-blue-100 dark:border-blue-800 backdrop-blur-sm">
+                           <Sparkles className="w-3 h-3 animate-pulse" />
+                           <span>Improving results with AI...</span>
+                        </div>
+                     </motion.div>
+                   )}
+                 </AnimatePresence>
               </div>
 
               {!isSearching && searchQuery && (
                  <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
+                   {/* Pass current filtered tools to the summary */}
                    <AISearchSummary query={searchQuery} tools={filteredTools} />
                  </div>
               )}
 
               {!isSearching && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-32">
+                <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-32 transition-opacity duration-500 ${isUpgrading ? 'opacity-60' : 'opacity-100'}`}>
                   {filteredTools.map((tool) => {
                       const logo = getLogo(tool);
                       const isSelected = compareList.find(t => t.id === tool.id);
