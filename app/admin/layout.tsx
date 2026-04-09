@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LayoutDashboard, Search, BarChart3, Users, Activity, Wrench, PlusCircle, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Search, BarChart3, Users, Activity, Wrench, PlusCircle, ShieldCheck, Upload } from 'lucide-react';
 
 const nav = [
   { label: 'Overview', href: '/admin', icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const nav = [
   { divider: true },
   { label: 'Manage Tools', href: '/admin/manage', icon: Wrench },
   { label: 'Add New Tool', href: '/admin/manage/new', icon: PlusCircle },
+  { label: 'Bulk Import', href: '/admin/import', icon: Upload },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
