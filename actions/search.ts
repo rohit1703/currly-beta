@@ -120,7 +120,9 @@ export async function smartSearch(query: string): Promise<Tool[]> {
 }
 
 // --- 3. SUGGESTIONS (Autocomplete) ---
-export async function getSuggestions(query: string): Promise<string[]> {
+export type Suggestion = { text: string; type: 'query' | 'tool' };
+
+export async function getSuggestions(query: string): Promise<Suggestion[]> {
   if (!query || query.length < 2) return [];
 
   const supabase = createPublicClient(
@@ -128,13 +130,62 @@ export async function getSuggestions(query: string): Promise<string[]> {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const { data } = await supabase
-    .from('tools')
-    .select('name')
-    .ilike('name', `%${query}%`)
-    .limit(6);
+  // Fetch popular past queries + tool names in parallel
+  const [{ data: pastQueries }, { data: toolNames }] = await Promise.all([
+    supabase
+      .from('search_queries')
+      .select('query')
+      .ilike('query', `%${query}%`)
+      .order('count', { ascending: false })
+      .limit(4),
+    supabase
+      .from('tools')
+      .select('name')
+      .ilike('name', `%${query}%`)
+      .limit(4),
+  ]);
 
-  return (data || []).map((t: any) => t.name);
+  const querySet = new Set<string>();
+  const results: Suggestion[] = [];
+
+  for (const row of (pastQueries || [])) {
+    if (!querySet.has(row.query.toLowerCase())) {
+      querySet.add(row.query.toLowerCase());
+      results.push({ text: row.query, type: 'query' });
+    }
+  }
+
+  for (const row of (toolNames || [])) {
+    if (!querySet.has(row.name.toLowerCase())) {
+      querySet.add(row.name.toLowerCase());
+      results.push({ text: row.name, type: 'tool' });
+    }
+  }
+
+  return results.slice(0, 6);
+}
+
+// --- 4. LOG SEARCH ---
+export async function logSearch(query: string): Promise<void> {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized || normalized.length < 2) return;
+
+  const supabase = createPublicClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  // Try to insert; if already exists, increment count via RPC
+  const { error } = await supabase.from('search_queries').insert({
+    query: normalized,
+    count: 1,
+    last_searched_at: new Date().toISOString(),
+  });
+
+  // Duplicate — increment the count instead
+  if (error?.code === '23505') {
+    await supabase.rpc('increment_search_count', { search_query: normalized });
+  }
 }
 
 // --- 4. FALLBACK / UTILS ---

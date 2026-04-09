@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search } from 'lucide-react';
-import { getSuggestions } from '@/actions/search';
+import { Search, TrendingUp } from 'lucide-react';
+import { getSuggestions, logSearch, type Suggestion } from '@/actions/search';
 
 interface Props {
   defaultValue?: string;
@@ -11,7 +11,6 @@ interface Props {
   inputName?: string;
   formAction?: string;
   onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
-  inputClassName?: string;
   containerClassName?: string;
 }
 
@@ -21,11 +20,10 @@ export default function SearchAutocomplete({
   inputName = 'q',
   formAction = '/dashboard',
   onSubmit,
-  inputClassName = '',
   containerClassName = '',
 }: Props) {
   const [value, setValue] = useState(defaultValue);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,6 +59,7 @@ export default function SearchAutocomplete({
   const navigate = (q: string) => {
     setOpen(false);
     setValue(q);
+    logSearch(q);
     router.push(`/dashboard?q=${encodeURIComponent(q)}`);
   };
 
@@ -74,7 +73,7 @@ export default function SearchAutocomplete({
       setActiveIndex(i => Math.max(i - 1, -1));
     } else if (e.key === 'Enter' && activeIndex >= 0) {
       e.preventDefault();
-      navigate(suggestions[activeIndex]);
+      navigate(suggestions[activeIndex].text);
     } else if (e.key === 'Escape') {
       setOpen(false);
     }
@@ -82,6 +81,7 @@ export default function SearchAutocomplete({
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     setOpen(false);
+    if (value.trim()) logSearch(value.trim());
     if (onSubmit) onSubmit(e);
   };
 
@@ -100,7 +100,7 @@ export default function SearchAutocomplete({
             onFocus={() => suggestions.length > 0 && setOpen(true)}
             placeholder={placeholder}
             autoComplete="off"
-            className={`flex-1 bg-transparent border-none outline-none text-base text-[#1A1A1A] dark:text-white placeholder-gray-400 h-12 ${inputClassName}`}
+            className="flex-1 bg-transparent border-none outline-none text-base text-[#1A1A1A] dark:text-white placeholder-gray-400 h-12"
           />
           <button type="submit" className="bg-[#0066FF] hover:bg-[#0052CC] text-white px-6 py-2.5 rounded-full font-bold transition-all shrink-0">
             Search
@@ -112,14 +112,23 @@ export default function SearchAutocomplete({
         <ul className="absolute z-50 mt-2 w-full bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 rounded-2xl shadow-xl overflow-hidden">
           {suggestions.map((s, i) => (
             <li
-              key={s}
-              onMouseDown={() => navigate(s)}
-              className={`flex items-center gap-3 px-5 py-3 cursor-pointer text-sm text-gray-700 dark:text-gray-200 transition-colors ${
-                i === activeIndex ? 'bg-blue-50 dark:bg-white/10 text-[#0066FF]' : 'hover:bg-gray-50 dark:hover:bg-white/5'
+              key={s.text}
+              onMouseDown={() => navigate(s.text)}
+              className={`flex items-center gap-3 px-5 py-3 cursor-pointer text-sm transition-colors ${
+                i === activeIndex
+                  ? 'bg-blue-50 dark:bg-white/10 text-[#0066FF]'
+                  : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5'
               }`}
             >
-              <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-              {s}
+              {s.type === 'query' ? (
+                <TrendingUp className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+              ) : (
+                <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+              )}
+              <span className="flex-1">{s.text}</span>
+              {s.type === 'query' && (
+                <span className="text-xs text-gray-400">popular</span>
+              )}
             </li>
           ))}
         </ul>
