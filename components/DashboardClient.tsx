@@ -365,13 +365,22 @@ export default function DashboardClient({
                         ? (Date.now() - new Date(tool.launch_date).getTime()) < 7 * 24 * 60 * 60 * 1000
                         : false;
                       return (
-                        <div key={tool.id} className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col relative`}>
+                        <div key={tool.id} className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col relative cursor-pointer`}>
+                          {/* Stretched link — covers whole card */}
+                          <Link
+                            href={`/tool/${tool.slug}${searchQuery ? `?from=${encodeURIComponent(searchQuery)}` : ''}`}
+                            className="absolute inset-0 rounded-[2rem]"
+                            onClick={() => logToolClick(tool.id, searchQuery)}
+                            aria-label={tool.name}
+                          />
+
                           {isNew && (
-                            <span className="absolute top-5 left-5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white tracking-wide">
+                            <span className="absolute top-5 left-5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white tracking-wide z-10">
                               NEW
                             </span>
                           )}
-                          <div className="flex justify-between items-start mb-6">
+
+                          <div className="flex justify-between items-start mb-6 relative z-10">
                             <div className="w-14 h-14 bg-[#FDFBF7] dark:bg-black rounded-2xl p-2 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-inner overflow-hidden">
                               <img src={logo || `https://api.dicebear.com/7.x/initials/svg?seed=${tool.name}`} className="w-full h-full object-contain rounded-lg" onError={(e) => {e.currentTarget.style.display='none'}} />
                             </div>
@@ -387,21 +396,16 @@ export default function DashboardClient({
                               </span>
                             </div>
                           </div>
-                          <Link
-                            href={`/tool/${tool.slug}${searchQuery ? `?from=${encodeURIComponent(searchQuery)}` : ''}`}
-                            className="hover:text-[#0066FF] transition-colors"
-                            onClick={() => logToolClick(tool.id, searchQuery)}
-                          >
-                            <h3 className="font-bold text-lg md:text-xl mb-2 text-[#1A1A1A] dark:text-white hover:text-[#0066FF] transition-colors">{tool.name}</h3>
-                          </Link>
-                          <div className="flex items-center gap-4 text-xs text-gray-500 font-medium mb-4">
+
+                          <h3 className="font-bold text-lg md:text-xl mb-2 text-[#1A1A1A] dark:text-white group-hover:text-[#0066FF] transition-colors relative z-10">{tool.name}</h3>
+                          <div className="flex items-center gap-4 text-xs text-gray-500 font-medium mb-4 relative z-10">
                             <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 15m setup</span>
                             {tool.is_india_based && <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded"><MapPin className="w-3 h-3" /> India</span>}
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 line-clamp-2 leading-relaxed flex-grow">{tool.description}</p>
-                          <div className="grid grid-cols-2 gap-3 mt-auto">
-                            <button onClick={() => toggleCompare(tool)} className="bg-white dark:bg-black hover:bg-gray-50 border border-gray-200 dark:border-white/20 text-xs font-bold py-3 rounded-xl transition-colors text-[#1A1A1A] dark:text-white">Compare</button>
-                            <a href={tool.website || '#'} target="_blank" rel="noopener noreferrer" onClick={() => logToolClick(tool.id, searchQuery)} className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-500/20">Visit <ExternalLink className="w-3 h-3" /></a>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 line-clamp-2 leading-relaxed flex-grow relative z-10">{tool.description}</p>
+                          <div className="grid grid-cols-2 gap-3 mt-auto relative z-10">
+                            <button onClick={(e) => { e.preventDefault(); toggleCompare(tool); }} className="bg-white dark:bg-black hover:bg-gray-50 border border-gray-200 dark:border-white/20 text-xs font-bold py-3 rounded-xl transition-colors text-[#1A1A1A] dark:text-white">Compare</button>
+                            <a href={tool.website || '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.stopPropagation(); logToolClick(tool.id, searchQuery); }} className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-500/20">Visit <ExternalLink className="w-3 h-3" /></a>
                           </div>
                         </div>
                       );
