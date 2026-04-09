@@ -20,7 +20,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const { data: tool } = await supabase.from('tools').select('name, description, image_url').eq('slug', slug).single();
+  const { data: tool } = await supabase.from('tools').select('name, description, image_url, pricing_model, main_category').eq('slug', slug).single();
   if (!tool) return { title: 'Tool Not Found' };
   const fallbackDesc = `${tool.name} is a${tool.pricing_model ? ` ${tool.pricing_model.toLowerCase()}` : 'n'} AI tool${tool.main_category ? ` for ${tool.main_category.toLowerCase()}` : ''}. Discover features, pricing, and alternatives on Currly.`;
   const description = tool.description?.substring(0, 160) || fallbackDesc;
