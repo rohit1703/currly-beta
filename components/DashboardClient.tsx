@@ -16,6 +16,7 @@ import AISearchSummary from '@/components/AISearchSummary';
 import AdoptionModal from '@/components/AdoptionModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
+import { smartSearch } from '@/actions/search';
 
 export default function DashboardClient({
   initialTools,
@@ -45,6 +46,28 @@ export default function DashboardClient({
     setTools(initialTools);
     setIsSearching(false);
   }, [initialTools]);
+
+  // Silent semantic upgrade — runs after page renders with fast text results.
+  // Swaps in ranked semantic results only if user hasn't scrolled away.
+  useEffect(() => {
+    if (!searchQuery) return;
+    let cancelled = false;
+
+    smartSearch(searchQuery).then(semanticResults => {
+      if (cancelled || semanticResults.length === 0) return;
+      // Don't disrupt the user if they've already scrolled down
+      if (window.scrollY > 300) return;
+
+      // Merge: semantic first (ranked), then text-only extras
+      setTools(prev => {
+        const seenIds = new Set(semanticResults.map((t: any) => t.id));
+        const textOnly = prev.filter((t: any) => !seenIds.has(t.id));
+        return [...semanticResults, ...textOnly];
+      });
+    });
+
+    return () => { cancelled = true; };
+  }, [searchQuery]);
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     const form = e.currentTarget;
