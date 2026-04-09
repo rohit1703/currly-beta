@@ -9,10 +9,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // Fetch all tools (no launch_status column exists in DB)
   const { data: tools } = await supabase
     .from('tools')
     .select('slug, launch_date, main_category')
+    .eq('launch_status', 'Live')
     .order('launch_date', { ascending: false });
 
   // Derive unique categories from actual tools in DB

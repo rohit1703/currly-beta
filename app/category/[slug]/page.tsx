@@ -27,6 +27,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     .from('tools')
     .select('*')
     .ilike('main_category', `%${slug}%`)
+    .eq('launch_status', 'Live')
     .order('launch_date', { ascending: false });
 
   const categoryName = slug.charAt(0).toUpperCase() + slug.slice(1);
