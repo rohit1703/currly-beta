@@ -5,7 +5,9 @@ import Link from 'next/link';
 import {
   Search, CheckSquare, Square, X, Zap, MapPin,
   Clock, Loader2, Globe, LayoutGrid, Code, PenTool,
-  BarChart3, MessageSquare, Edit
+  BarChart3, MessageSquare, Edit, ExternalLink,
+  Video, Mic, ImageIcon, Database, DollarSign, Users,
+  Scale, TrendingUp, MessageCircle, Grid2x2, FileText,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -13,10 +15,32 @@ import UserNav from '@/components/UserNav';
 import MobileMenu from '@/components/MobileMenu';
 import ToolCard from '@/components/ToolCardItem';
 import AISearchSummary from '@/components/AISearchSummary';
-import AdoptionModal from '@/components/AdoptionModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import { smartSearch, logToolClick } from '@/actions/search';
+
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  'Marketing': Zap,
+  'Development': Code,
+  'Design': PenTool,
+  'Productivity': LayoutGrid,
+  'Analytics': BarChart3,
+  'Chatbots': MessageSquare,
+  'Writing': Edit,
+  'Video': Video,
+  'Audio': Mic,
+  'Image Generation': ImageIcon,
+  'Data': Database,
+  'Finance': DollarSign,
+  'HR': Users,
+  'Legal': Scale,
+  'Sales': TrendingUp,
+  'Customer Support': MessageCircle,
+  'Coding': Code,
+  'Content': FileText,
+  'Social Media': Globe,
+  'Other': Grid2x2,
+};
 
 export default function DashboardClient({
   initialTools,
@@ -42,8 +66,6 @@ export default function DashboardClient({
 
   // INTERACTION STATE
   const [compareList, setCompareList] = useState<any[]>([]);
-  const [selectedTool, setSelectedTool] = useState<any>(null);
-  const [isAdoptionOpen, setIsAdoptionOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
   const [isSearching, setIsSearching] = useState(false);
 
@@ -382,7 +404,7 @@ export default function DashboardClient({
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 line-clamp-2 leading-relaxed flex-grow">{tool.description}</p>
                           <div className="grid grid-cols-2 gap-3 mt-auto">
                             <button onClick={() => toggleCompare(tool)} className="bg-white dark:bg-black hover:bg-gray-50 border border-gray-200 dark:border-white/20 text-xs font-bold py-3 rounded-xl transition-colors text-[#1A1A1A] dark:text-white">Compare</button>
-                            <button onClick={() => { logToolClick(tool.id, searchQuery); setSelectedTool(tool); setIsAdoptionOpen(true); }} className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-500/20">Test Demo <Zap className="w-3 h-3" /></button>
+                            <a href={tool.website || '#'} target="_blank" rel="noopener noreferrer" onClick={() => logToolClick(tool.id, searchQuery)} className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-500/20">Visit <ExternalLink className="w-3 h-3" /></a>
                           </div>
                         </div>
                       );
@@ -397,31 +419,25 @@ export default function DashboardClient({
             <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 mt-8">
                <h2 className="text-2xl font-bold mb-8 text-center text-[#1A1A1A] dark:text-white">Browse by Category</h2>
                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[
-                    { name: "Marketing", icon: Zap, count: "120+" },
-                    { name: "Development", icon: Code, count: "85+" },
-                    { name: "Design", icon: PenTool, count: "94+" },
-                    { name: "Productivity", icon: LayoutGrid, count: "200+" },
-                    { name: "Analytics", icon: BarChart3, count: "45+" },
-                    { name: "Chatbots", icon: MessageSquare, count: "60+" },
-                    { name: "Writing", icon: Edit, count: "70+" },
-                    { name: "Video", icon: Globe, count: "50+" },
-                  ].map((cat, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                         setCategoryFilter(cat.name);
-                         setActiveTab('search'); 
-                      }}
-                      className="flex flex-col items-center justify-center p-8 rounded-[2rem] bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group"
-                    >
-                       <div className="w-12 h-12 bg-blue-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-[#0066FF] mb-4 group-hover:scale-110 transition-transform">
-                         <cat.icon className="w-6 h-6" />
-                       </div>
-                       <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">{cat.name}</h3>
-                       <p className="text-xs text-gray-500">{cat.count}</p>
-                    </button>
-                  ))}
+                  {allCategories.map((cat) => {
+                    const Icon = CATEGORY_ICONS[cat.name] || Grid2x2;
+                    return (
+                      <button
+                        key={cat.name}
+                        onClick={() => {
+                          setCategoryFilter(cat.name);
+                          setActiveTab('search');
+                        }}
+                        className="flex flex-col items-center justify-center p-8 rounded-[2rem] bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group"
+                      >
+                        <div className="w-12 h-12 bg-blue-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-[#0066FF] mb-4 group-hover:scale-110 transition-transform">
+                          <Icon className="w-6 h-6" />
+                        </div>
+                        <h3 className="font-bold text-base text-gray-900 dark:text-white mb-1 text-center">{cat.name}</h3>
+                        <p className="text-xs text-gray-500">{cat.count} tools</p>
+                      </button>
+                    );
+                  })}
                </div>
             </div>
           )}
@@ -434,7 +450,6 @@ export default function DashboardClient({
              </div>
           )}
         </div>
-        <AdoptionModal isOpen={isAdoptionOpen} onClose={() => setIsAdoptionOpen(false)} toolName={selectedTool?.name} demoUrl={selectedTool?.demo_video_url} />
       </main>
     </div>
   );

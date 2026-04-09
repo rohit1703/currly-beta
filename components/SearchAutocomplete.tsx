@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, TrendingUp } from 'lucide-react';
+import { Search, TrendingUp, Loader2 } from 'lucide-react';
 import { getSuggestions, logSearch, logSearchEvent, type Suggestion } from '@/actions/search';
 
 interface Props {
@@ -26,6 +26,7 @@ export default function SearchAutocomplete({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [navigating, setNavigating] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -59,6 +60,7 @@ export default function SearchAutocomplete({
   const navigate = (q: string) => {
     setOpen(false);
     setValue(q);
+    setNavigating(true);
     logSearch(q);
     router.push(`/dashboard?q=${encodeURIComponent(q)}`);
   };
@@ -82,6 +84,7 @@ export default function SearchAutocomplete({
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     setOpen(false);
     if (value.trim()) {
+      setNavigating(true);
       logSearch(value.trim());
       logSearchEvent(value.trim());
     }
@@ -105,8 +108,9 @@ export default function SearchAutocomplete({
             autoComplete="off"
             className="flex-1 bg-transparent border-none outline-none text-base text-[#1A1A1A] dark:text-white placeholder-gray-400 h-12"
           />
-          <button type="submit" className="bg-[#0066FF] hover:bg-[#0052CC] text-white px-6 py-2.5 rounded-full font-bold transition-all shrink-0">
-            Search
+          <button type="submit" disabled={navigating} className="bg-[#0066FF] hover:bg-[#0052CC] disabled:opacity-70 text-white px-6 py-2.5 rounded-full font-bold transition-all shrink-0 flex items-center gap-2">
+            {navigating ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {navigating ? 'Searching...' : 'Search'}
           </button>
         </div>
       </form>

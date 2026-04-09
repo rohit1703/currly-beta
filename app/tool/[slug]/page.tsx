@@ -1,8 +1,11 @@
 import { createAdminClient } from '@/utils/supabase/admin';
+import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ExternalLink, Globe, Tag, IndianRupee } from 'lucide-react';
+import SaveButton from '@/components/SaveButton';
 
 const supabase = createAdminClient();
 
@@ -49,7 +52,10 @@ export default async function ToolPage({
   const backHref = from ? `/dashboard?q=${encodeURIComponent(from)}` : '/dashboard';
   const backLabel = from ? `← Back to "${from}"` : '← Back to Search';
 
-  const [{ data: tool }, ] = await Promise.all([
+  // Get user session + tool data in parallel
+  const userSupabase = createClient(await cookies());
+  const [{ data: { user } }, { data: tool }] = await Promise.all([
+    userSupabase.auth.getUser(),
     supabase
       .from('tools')
       .select('id, name, slug, website, description, image_url, main_category, pricing_model, is_india_based, launch_date')
@@ -58,6 +64,18 @@ export default async function ToolPage({
   ]);
 
   if (!tool) return notFound();
+
+  // Check if tool is already saved by this user
+  let isSaved = false;
+  if (user) {
+    const { data: saved } = await userSupabase
+      .from('saved_tools')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('tool_id', tool.id)
+      .maybeSingle();
+    isSaved = !!saved;
+  }
 
   // #6 — Related tools from same category
   const { data: relatedTools } = await supabase
@@ -154,6 +172,7 @@ export default async function ToolPage({
                   Visit Website <ExternalLink className="w-4 h-4" />
                 </a>
               )}
+              <SaveButton toolId={tool.id} initialSaved={isSaved} isLoggedIn={!!user} />
             </div>
           </div>
         </div>
