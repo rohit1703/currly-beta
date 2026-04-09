@@ -34,6 +34,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
+  // Protect /admin — only rohitagentx@gmail.com can access
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!user || user.email !== 'rohitagentx@gmail.com') {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+  }
+
   return supabaseResponse
 }
 
