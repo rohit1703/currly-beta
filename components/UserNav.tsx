@@ -50,7 +50,7 @@ export default function UserNav() {
         >
           <Bookmark className="w-4 h-4" /> My Stack
         </Link>
-        <Link href="/saved">
+        <Link href="/profile">
           <div className="w-9 h-9 bg-[#0066FF] rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden border border-gray-200 dark:border-white/10 shadow-sm hover:opacity-80 transition-opacity">
             {user.user_metadata?.avatar_url ? (
               <img src={user.user_metadata.avatar_url} alt="User" className="w-full h-full object-cover" />
