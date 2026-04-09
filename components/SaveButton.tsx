@@ -21,13 +21,17 @@ export default function SaveButton({
   const [pending, startTransition] = useTransition();
 
   const toggle = () => {
+    const newSaved = !saved;
+    setSaved(newSaved); // Optimistic: update immediately
     startTransition(async () => {
-      if (saved) {
-        await unsaveTool(toolId);
-        setSaved(false);
-      } else {
-        await saveTool(toolId);
-        setSaved(true);
+      try {
+        if (newSaved) {
+          await saveTool(toolId);
+        } else {
+          await unsaveTool(toolId);
+        }
+      } catch {
+        setSaved(!newSaved); // Revert on failure
       }
     });
   };
