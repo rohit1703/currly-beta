@@ -1,11 +1,13 @@
-import { createClient } from '@/utils/supabase/server';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 import HomeClient from '@/components/HomeClient';
 
-export default async function Home() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+// Tools are public data — use the anon client directly (no auth cookie needed)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
+export default async function Home() {
   const [{ data: tools }, { data: categoryRows }] = await Promise.all([
     supabase
       .from('tools')
@@ -19,7 +21,7 @@ export default async function Home() {
       .eq('launch_status', 'Live'),
   ]);
 
-  // Build category counts
+  // Build category counts from actual data
   const categoryMap: Record<string, number> = {};
   for (const row of categoryRows || []) {
     const cat = row.main_category;
