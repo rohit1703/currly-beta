@@ -74,14 +74,16 @@ export async function quickSearch(query: string): Promise<Tool[]> {
   return getCachedText(query);
 }
 
-// --- 2. SMART SEARCH (Vector Only - Slow but Better) ---
-// This is called dynamically by the client, so it can use the standard server client.
+// --- 2. SMART SEARCH (Semantic / Vector) ---
+// Uses OpenAI embeddings + pgvector. No cookies needed — vector search is a public read.
 export async function smartSearch(query: string): Promise<Tool[]> {
   if (!query || !process.env.OPENAI_API_KEY) return [];
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const cookieStore = await cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = createPublicClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   try {
     const embeddingResponse = await openai.embeddings.create({
@@ -93,14 +95,17 @@ export async function smartSearch(query: string): Promise<Tool[]> {
 
     const { data, error } = await supabase.rpc('match_tools', {
       query_embedding: queryEmbedding,
-      match_threshold: 0.01,
+      match_threshold: 0.3,
       match_count: 20
     });
 
-    if (error) console.error("Vector match error:", error);
+    if (error) {
+      console.error("Vector match error:", error);
+      return [];
+    }
     return (data as Tool[]) || [];
   } catch (err) {
-    console.error("OpenAI error:", err);
+    console.error("SmartSearch error:", err);
     return [];
   }
 }

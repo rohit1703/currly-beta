@@ -15,81 +15,33 @@ import ToolCard from '@/components/ToolCardItem';
 import AISearchSummary from '@/components/AISearchSummary';
 import AdoptionModal from '@/components/AdoptionModal';
 import { motion, AnimatePresence } from 'framer-motion';
-// NEW: Import the smart search action
-import { smartSearch } from '@/actions/search';
 
-export default function DashboardClient({ 
-  initialTools, 
-  searchQuery 
-}: { 
-  initialTools: any[], 
-  searchQuery: string 
+export default function DashboardClient({
+  initialTools,
+  searchQuery
+}: {
+  initialTools: any[],
+  searchQuery: string
 }) {
   // --- STATE ---
-  
-  // 1. DATA STATE: Start with fast server results, then update
+  // Semantic search results come from the server — no client-side upgrade needed
   const [tools, setTools] = useState(initialTools);
-  // 2. OPTIMISTIC STATE: Track if we are fetching better AI results
-  const [isUpgrading, setIsUpgrading] = useState(false);
 
   // FILTER STATE
   const [indiaOnly, setIndiaOnly] = useState(false);
   const [priceFilter, setPriceFilter] = useState<string[]>([]);
   const [categoryFilter, setCategoryFilter] = useState('All');
-  
+
   // INTERACTION STATE
   const [compareList, setCompareList] = useState<any[]>([]);
   const [selectedTool, setSelectedTool] = useState<any>(null);
   const [isAdoptionOpen, setIsAdoptionOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
-
-  // LOADING ANIMATION STATE (Legacy manual loading)
   const [isSearching, setIsSearching] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
-  const loadingTexts = ["Analyzing intent...", "Vectorizing query...", "Scanning 1,700+ tools...", "Ranking by relevance..."];
 
-  // --- EFFECTS ---
-
-  // 1. OPTIMISTIC UI: Trigger "Smart Search" in background
+  // Sync tools when server sends new results (e.g. after navigation)
   useEffect(() => {
-    // A. Reset tools when the query changes (shows fast text results first)
     setTools(initialTools);
-    
-    // B. If there is a query, try to "upgrade" results with Vector Search
-    if (searchQuery) {
-      const upgradeResults = async () => {
-        setIsUpgrading(true);
-        try {
-          // Call the server action we exported earlier
-          const smartResults = await smartSearch(searchQuery);
-          
-          // Only update if AI found meaningful results
-          if (smartResults && smartResults.length > 0) {
-            setTools(smartResults);
-          }
-        } catch (e) {
-          console.error("AI Search upgrade failed, sticking to text results", e);
-        } finally {
-          setIsUpgrading(false);
-        }
-      };
-
-      upgradeResults();
-    }
-  }, [initialTools, searchQuery]);
-
-  // 2. Cycle through loading texts (Legacy)
-  useEffect(() => {
-    if (isSearching) {
-      const interval = setInterval(() => {
-        setLoadingStep((prev) => (prev + 1) % loadingTexts.length);
-      }, 800);
-      return () => clearInterval(interval);
-    }
-  }, [isSearching]);
-
-  // 3. Stop legacy loading when new data arrives
-  useEffect(() => {
     setIsSearching(false);
   }, [initialTools]);
 
@@ -282,22 +234,6 @@ export default function DashboardClient({
                    )}
                  </AnimatePresence>
 
-                 {/* NEW: NON-BLOCKING AI INDICATOR (Shows when upgrading fast results) */}
-                 <AnimatePresence>
-                   {!isSearching && isUpgrading && (
-                     <motion.div 
-                       initial={{ opacity: 0, y: 5 }} 
-                       animate={{ opacity: 1, y: 0 }} 
-                       exit={{ opacity: 0 }}
-                       className="absolute -bottom-10 left-0 w-full flex justify-center"
-                     >
-                        <div className="flex items-center gap-2 text-xs font-medium text-[#0066FF] bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full border border-blue-100 dark:border-blue-800 backdrop-blur-sm">
-                           <Sparkles className="w-3 h-3 animate-pulse" />
-                           <span>Improving results with AI...</span>
-                        </div>
-                     </motion.div>
-                   )}
-                 </AnimatePresence>
               </div>
 
               {!isSearching && searchQuery && (
@@ -307,7 +243,7 @@ export default function DashboardClient({
                  </div>
               )}
 
-              {!isSearching && !isUpgrading && filteredTools.length === 0 && searchQuery && (
+              {!isSearching && filteredTools.length === 0 && searchQuery && (
                 <div className="flex flex-col items-center justify-center py-24 text-center">
                   <div className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mb-4">
                     <Search className="w-7 h-7 text-gray-400" />
@@ -320,7 +256,7 @@ export default function DashboardClient({
               )}
 
               {!isSearching && (
-                <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-32 transition-opacity duration-500 ${isUpgrading ? 'opacity-60' : 'opacity-100'}`}>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-32">
                   {filteredTools.map((tool) => {
                       const logo = getLogo(tool);
                       const isSelected = compareList.find(t => t.id === tool.id);
