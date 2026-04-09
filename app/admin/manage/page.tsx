@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/utils/supabase/admin';
 import Link from 'next/link';
 import { deleteTool } from './actions';
+import DeleteButton from '@/components/admin/DeleteButton';
 
 export default async function ManageTools({
   searchParams,
@@ -84,11 +85,11 @@ export default async function ManageTools({
                         <a href={t.website} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:text-white">Visit</a>
                       )}
                       <Link href={`/admin/manage/${t.id}`} className="text-xs text-[#0066FF] hover:underline">Edit</Link>
-                      <form action={async () => { 'use server'; await deleteTool(t.id); }}>
-                        <button type="submit" className="text-xs text-red-400 hover:text-red-300" onClick={(e) => { if (!confirm(`Delete "${t.name}"?`)) e.preventDefault(); }}>
-                          Delete
-                        </button>
-                      </form>
+                      <DeleteButton
+                        action={deleteTool.bind(null, t.id)}
+                        confirmMessage={`Delete "${t.name}"?`}
+                        className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                      />
                     </div>
                   </td>
                 </tr>
