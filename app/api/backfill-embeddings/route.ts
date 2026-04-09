@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   // Fetch all tools that have no embedding yet
   const { data: tools, error } = await supabase
     .from('tools')
-    .select('id, name, description, main_category, pricing_model, key_features, use_case, founder_name')
+    .select('id, name, description, main_category, pricing_model')
     .is('embedding', null)
     .limit(500);
 
@@ -43,9 +43,6 @@ export async function POST(request: Request) {
           `Description: ${tool.description || ''}`,
           `Category: ${tool.main_category || ''}`,
           `Pricing: ${tool.pricing_model || ''}`,
-          `Features: ${Array.isArray(tool.key_features) ? tool.key_features.join(', ') : tool.key_features || ''}`,
-          `Use Case: ${tool.use_case || ''}`,
-          `Founder: ${tool.founder_name || ''}`,
         ].join('. ').trim();
 
         const response = await openai.embeddings.create({
