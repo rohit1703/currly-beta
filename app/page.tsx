@@ -7,12 +7,13 @@ export default async function Home() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
-  // 2. Fetch Tools (Only 'Live' ones, newest first)
+  // 2. Fetch Tools (Only 'Live' ones, newest first — no embedding column, capped at 24)
   const { data: tools, error } = await supabase
     .from('tools')
-    .select('*')
+    .select('id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date')
     .eq('launch_status', 'Live')
-    .order('launch_date', { ascending: false });
+    .order('launch_date', { ascending: false })
+    .limit(24);
 
   if (error) {
     console.error("Error fetching tools for homepage:", error);

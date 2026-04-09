@@ -93,9 +93,16 @@ export default function DashboardClient({
     setIsSearching(false);
   }, [initialTools]);
 
-  const handleSearchSubmit = () => {
-    // Trigger visual loading
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const form = e.currentTarget;
+    const input = form.elements.namedItem('q') as HTMLInputElement;
+    // Only navigate if there is a query — let the native form action handle it
+    if (!input?.value?.trim()) {
+      e.preventDefault();
+      return;
+    }
     setIsSearching(true);
+    // Let the native form GET action proceed so Enter and click both work
   };
 
   // --- FILTERING ---

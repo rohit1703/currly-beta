@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { Loader2 } from 'lucide-react'; 
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  
+  const searchParams = useSearchParams();
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -17,10 +19,13 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     try {
       setIsLoading(true);
+      // Read where the user was trying to go before being sent to login
+      const redirectTo = searchParams.get('redirectTo') || '/dashboard';
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          // Pass the original destination as 'next' so auth/callback can redirect there
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
         },
       });
       if (error) throw error;

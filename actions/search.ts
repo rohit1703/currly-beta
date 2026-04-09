@@ -22,7 +22,7 @@ export async function quickSearch(query: string): Promise<Tool[]> {
 
       const { data } = await supabase
         .from('tools')
-        .select('*')
+        .select('id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date')
         .textSearch('fts', q, {
           type: 'websearch',
           config: 'english'
@@ -79,7 +79,7 @@ export async function getLatestTools(limit: number = 50): Promise<Tool[]> {
 
   const { data } = await supabase
     .from('tools')
-    .select('*')
+    .select('id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date')
     .order('launch_date', { ascending: false })
     .limit(limit);
   return (data as Tool[]) || [];

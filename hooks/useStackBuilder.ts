@@ -1,6 +1,6 @@
 // hooks/useStackBuilder.ts
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/utils/supabase';
+import { createClient } from '@/utils/supabase';
 import { Tool } from '@/types'; 
 
 export function useStackBuilder() {
@@ -20,14 +20,15 @@ export function useStackBuilder() {
         setSearchResults([]);
         return;
       }
-      
+
       setIsSearching(true);
       setError(null);
 
       try {
+        const supabase = createClient();
         const { data, error } = await supabase
           .from('tools')
-          .select('*')
+          .select('id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date')
           .ilike('name', `%${searchQuery}%`)
           .limit(5)
           .abortSignal(controller.signal);
