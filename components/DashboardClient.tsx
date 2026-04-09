@@ -22,10 +22,14 @@ export default function DashboardClient({
   initialTools,
   searchQuery,
   isFuzzy = false,
+  allCategories = [],
+  totalCount = 0,
 }: {
-  initialTools: any[],
-  searchQuery: string,
-  isFuzzy?: boolean,
+  initialTools: any[];
+  searchQuery: string;
+  isFuzzy?: boolean;
+  allCategories?: { name: string; count: number }[];
+  totalCount?: number;
 }) {
   // --- STATE ---
   // Semantic search results come from the server — no client-side upgrade needed
@@ -94,9 +98,15 @@ export default function DashboardClient({
     }
 
     if (priceFilter.length > 0) {
-      const isFree = tool.pricing_model?.toLowerCase().includes('free');
-      if (priceFilter.includes('Free') && !isFree) return false;
-      if (priceFilter.includes('Paid') && isFree) return false;
+      const m = tool.pricing_model?.toLowerCase() || '';
+      const matches = priceFilter.some(p => {
+        if (p === 'Free') return m === 'free';
+        if (p === 'Freemium') return m.includes('freemium');
+        if (p === 'Paid') return m === 'paid' || m === 'saas' || m === 'api-based';
+        if (p === 'Open Source') return m.includes('open source');
+        return false;
+      });
+      if (!matches) return false;
     }
 
     return true;
@@ -126,12 +136,74 @@ export default function DashboardClient({
 
   // --- SIDEBAR COMPONENT ---
   const SidebarContent = () => (
-    <div className="space-y-8">
+    <div className="space-y-6">
+
+      {/* Results count */}
+      <div className="p-4 bg-[#0066FF]/5 dark:bg-blue-900/10 rounded-2xl border border-[#0066FF]/10">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <div className="text-xs text-[#0066FF] font-bold uppercase tracking-wider">Results</div>
+        </div>
+        <div className="text-lg font-bold text-[#1A1A1A] dark:text-white">
+          {filteredTools.length.toLocaleString()} <span className="text-sm font-normal text-gray-400">of {totalCount.toLocaleString()}</span>
+        </div>
+        {(indiaOnly || priceFilter.length > 0 || categoryFilter !== 'All') && (
+          <button onClick={() => { setCategoryFilter('All'); setIndiaOnly(false); setPriceFilter([]); }}
+            className="text-xs text-[#0066FF] hover:underline mt-1">Clear filters</button>
+        )}
+      </div>
+
+      {/* Category */}
       <div>
-        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Region</div>
+        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">Category</div>
+        <div className="space-y-0.5 max-h-52 overflow-y-auto pr-1">
+          <div
+            onClick={() => setCategoryFilter('All')}
+            className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-sm transition-colors ${categoryFilter === 'All' ? 'bg-[#0066FF] text-white' : 'hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300'}`}
+          >
+            <span className="font-medium">All categories</span>
+            <span className={`text-xs ${categoryFilter === 'All' ? 'text-white/70' : 'text-gray-400'}`}>{totalCount}</span>
+          </div>
+          {allCategories.map(cat => (
+            <div
+              key={cat.name}
+              onClick={() => setCategoryFilter(cat.name === categoryFilter ? 'All' : cat.name)}
+              className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-sm transition-colors ${categoryFilter === cat.name ? 'bg-[#0066FF] text-white' : 'hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300'}`}
+            >
+              <span className="truncate">{cat.name}</span>
+              <span className={`text-xs shrink-0 ml-2 ${categoryFilter === cat.name ? 'text-white/70' : 'text-gray-400'}`}>{cat.count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pricing */}
+      <div>
+        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">Pricing</div>
+        <div className="space-y-0.5">
+          {['Free', 'Freemium', 'Paid', 'Open Source'].map(type => (
+            <div
+              key={type}
+              onClick={() => setPriceFilter(prev =>
+                prev.includes(type) ? prev.filter(p => p !== type) : [...prev, type]
+              )}
+              className="flex items-center gap-3 px-3 py-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-xl cursor-pointer"
+            >
+              {priceFilter.includes(type)
+                ? <CheckSquare className="w-4 h-4 text-[#0066FF] shrink-0" />
+                : <Square className="w-4 h-4 text-gray-300 shrink-0" />}
+              <span className={`text-sm ${priceFilter.includes(type) ? 'text-[#0066FF] font-semibold' : 'text-gray-700 dark:text-gray-300'}`}>{type}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Region */}
+      <div>
+        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">Region</div>
         <label className="flex items-center justify-between cursor-pointer group py-3 px-4 bg-white dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/5 hover:border-[#0066FF]/30 transition-all">
-          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">🇮🇳 India Only</span>
-          <button 
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">🇮🇳 India Made</span>
+          <button
             onClick={() => setIndiaOnly(!indiaOnly)}
             className={`w-11 h-6 rounded-full transition-colors flex items-center p-1 ${indiaOnly ? 'bg-[#0066FF]' : 'bg-gray-200 dark:bg-white/10'}`}
           >
@@ -140,32 +212,6 @@ export default function DashboardClient({
         </label>
       </div>
 
-      <div>
-        <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-1">Pricing Model</div>
-        <div className="space-y-2">
-          {['Free', 'Paid'].map(type => (
-            <div 
-              key={type} 
-              onClick={() => {
-                if (priceFilter.includes(type)) setPriceFilter(priceFilter.filter(p => p !== type));
-                else setPriceFilter([...priceFilter, type]);
-              }}
-              className="flex items-center gap-3 px-2 py-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg cursor-pointer"
-            >
-                {priceFilter.includes(type) ? <CheckSquare className="w-5 h-5 text-[#0066FF]" /> : <Square className="w-5 h-5 text-gray-300" />}
-                <span className="text-sm text-gray-700 dark:text-gray-300">{type}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      <div className="mt-8 p-5 bg-[#0066FF]/5 dark:bg-blue-900/10 rounded-2xl border border-[#0066FF]/10">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <div className="text-xs text-[#0066FF] font-bold uppercase tracking-wider">Live Status</div>
-          </div>
-          <div className="text-lg font-bold text-[#1A1A1A] dark:text-white">1,702 Tools</div>
-       </div>
     </div>
   );
 
