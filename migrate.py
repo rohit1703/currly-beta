@@ -1,4 +1,5 @@
 import os
+import re
 import pandas as pd
 from supabase import create_client, Client
 from dotenv import load_dotenv # You may need to run: pip install python-dotenv

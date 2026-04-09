@@ -111,8 +111,7 @@ export default function DashboardClient({
     if (indiaOnly && !tool.is_india_based) return false;
     
     if (categoryFilter !== 'All') {
-      const cat = categoryFilter.toLowerCase();
-      const matchesCat = tool.description?.toLowerCase().includes(cat) || tool.main_category?.toLowerCase().includes(cat);
+      const matchesCat = tool.main_category?.toLowerCase() === categoryFilter.toLowerCase();
       if (!matchesCat) return false;
     }
 

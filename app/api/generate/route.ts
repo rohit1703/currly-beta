@@ -7,9 +7,17 @@ import { z } from 'zod';
 export const runtime = 'edge';
 
 // 1. Define Input Schema (Validation)
+const ToolContextSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  pricing_model: z.string().optional(),
+  main_category: z.string().optional(),
+  is_india_based: z.boolean().optional(),
+});
+
 const GenerateSchema = z.object({
-  prompt: z.string().min(5).max(1000), // Limit length to prevent context overflow
-  context: z.array(z.any()).optional(),
+  prompt: z.string().min(5).max(500),
+  context: z.array(ToolContextSchema).max(20).optional(),
 });
 
 export async function POST(req: Request) {
@@ -28,7 +36,7 @@ export async function POST(req: Request) {
     const validation = GenerateSchema.safeParse(body);
     
     if (!validation.success) {
-      return new Response(JSON.stringify({ error: 'Invalid input', details: validation.error }), {
+      return new Response(JSON.stringify({ error: 'Invalid input' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
