@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, Variants } from 'framer-motion';
-import { Globe, Code, PenTool, Zap, LayoutGrid, Video, Mic, ImageIcon, Database, DollarSign, Users, Scale, TrendingUp, MessageCircle, Grid2x2, FileText } from 'lucide-react';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import ToolCard from '@/components/ToolCardItem';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -13,24 +12,7 @@ import UserNav from '@/components/UserNav';
 import { useCountUp } from '@/hooks/useCountUp';
 import { Testimonials } from '@/components/TestimonialsSection';
 import { Footer } from '@/components/FooterSection';
-
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  coding: Code,
-  design: PenTool,
-  writing: FileText,
-  marketing: Zap,
-  productivity: LayoutGrid,
-  video: Video,
-  audio: Mic,
-  image: ImageIcon,
-  data: Database,
-  finance: DollarSign,
-  hr: Users,
-  legal: Scale,
-  sales: TrendingUp,
-  support: MessageCircle,
-  other: Grid2x2,
-};
+import { getCategoryIcon, categoryToSlug } from '@/lib/categories';
 
 // --- MOBILE OPTIMIZED VARIANTS ---
 const fadeInUp: Variants = {
@@ -189,11 +171,11 @@ export default function HomeClient({ tools, categories: categoriesData, totalCou
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {categoriesData.map((cat, i) => {
-                const Icon = CATEGORY_ICONS[cat.slug] || Grid2x2;
+                const Icon = getCategoryIcon(cat.name);
                 return (
                   <div
                     key={i}
-                    onClick={() => router.push(`/category/${cat.slug}`)}
+                    onClick={() => router.push(`/category/${categoryToSlug(cat.name)}`)}
                     className="cursor-pointer bg-white dark:bg-[#111] p-4 rounded-xl border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group text-left active:scale-95"
                   >
                     <div className="w-8 h-8 bg-blue-50 dark:bg-white/5 rounded-lg flex items-center justify-center text-[#0066FF] mb-2.5 group-hover:scale-110 transition-transform">

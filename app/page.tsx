@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/utils/supabase/admin';
 import HomeClient from '@/components/HomeClient';
+import { categoryToSlug } from '@/lib/categories';
 
 export default async function Home() {
   const supabase = createAdminClient();
@@ -24,7 +25,7 @@ export default async function Home() {
   }
   const categories = Object.entries(categoryMap)
     .sort((a, b) => b[1] - a[1])
-    .map(([name, count]) => ({ name, count, slug: name.toLowerCase() }));
+    .map(([name, count]) => ({ name, count, slug: categoryToSlug(name) }));
 
   return <HomeClient tools={tools || []} categories={categories} totalCount={totalCount || 0} />;
 }

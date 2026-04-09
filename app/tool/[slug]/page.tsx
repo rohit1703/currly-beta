@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ExternalLink, Globe, Tag, IndianRupee } from 'lucide-react';
 import SaveButton from '@/components/SaveButton';
+import { categoryToSlug } from '@/lib/categories';
 
 const supabase = createAdminClient();
 
@@ -151,7 +152,7 @@ export default async function ToolPage({
             <div className="flex flex-wrap gap-2 mb-4">
               {tool.main_category && (
                 <Link
-                  href={`/category/${tool.main_category.toLowerCase()}`}
+                  href={`/category/${categoryToSlug(tool.main_category)}`}
                   className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-blue-50 dark:bg-[#0066FF]/10 text-[#0066FF] border border-blue-100 dark:border-[#0066FF]/20 font-medium hover:bg-blue-100 transition-colors"
                 >
                   <Tag className="w-3 h-3" /> {tool.main_category}
@@ -220,7 +221,7 @@ export default async function ToolPage({
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold">More {tool.main_category} Tools</h2>
               <Link
-                href={`/category/${tool.main_category?.toLowerCase()}`}
+                href={`/category/${categoryToSlug(tool.main_category ?? '')}`}
                 className="text-sm text-[#0066FF] hover:underline"
               >
                 View all →

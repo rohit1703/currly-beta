@@ -3,11 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  Search, CheckSquare, Square, X, Zap, MapPin,
-  Clock, Loader2, Globe, LayoutGrid, Code, PenTool,
-  BarChart3, MessageSquare, Edit, ExternalLink,
-  Video, Mic, ImageIcon, Database, DollarSign, Users,
-  Scale, TrendingUp, MessageCircle, Grid2x2, FileText,
+  Search, CheckSquare, Square, X, MapPin,
+  Clock, Loader2, LayoutGrid, ExternalLink,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -19,29 +16,8 @@ import SearchAutocomplete from '@/components/SearchAutocomplete';
 import { smartSearch, logToolClick } from '@/actions/search';
 import CompareModal from '@/components/CompareModal';
 import SaveButton from '@/components/SaveButton';
+import { getCategoryIcon, categoryToSlug } from '@/lib/categories';
 
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  'Marketing': Zap,
-  'Development': Code,
-  'Design': PenTool,
-  'Productivity': LayoutGrid,
-  'Analytics': BarChart3,
-  'Chatbots': MessageSquare,
-  'Writing': Edit,
-  'Video': Video,
-  'Audio': Mic,
-  'Image Generation': ImageIcon,
-  'Data': Database,
-  'Finance': DollarSign,
-  'HR': Users,
-  'Legal': Scale,
-  'Sales': TrendingUp,
-  'Customer Support': MessageCircle,
-  'Coding': Code,
-  'Content': FileText,
-  'Social Media': Globe,
-  'Other': Grid2x2,
-};
 
 export default function DashboardClient({
   initialTools,
@@ -441,7 +417,7 @@ export default function DashboardClient({
                <h2 className="text-2xl font-bold mb-8 text-center text-[#1A1A1A] dark:text-white">Browse by Category</h2>
                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {allCategories.map((cat) => {
-                    const Icon = CATEGORY_ICONS[cat.name] || Grid2x2;
+                    const Icon = getCategoryIcon(cat.name);
                     return (
                       <button
                         key={cat.name}
@@ -449,12 +425,12 @@ export default function DashboardClient({
                           setCategoryFilter(cat.name);
                           setActiveTab('search');
                         }}
-                        className="flex flex-col items-center justify-center p-8 rounded-[2rem] bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group"
+                        className="flex flex-col items-center justify-center p-6 rounded-[2rem] bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group text-center"
                       >
-                        <div className="w-12 h-12 bg-blue-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-[#0066FF] mb-4 group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 bg-blue-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-[#0066FF] mb-3 group-hover:scale-110 transition-transform shrink-0">
                           <Icon className="w-6 h-6" />
                         </div>
-                        <h3 className="font-bold text-base text-gray-900 dark:text-white mb-1 text-center">{cat.name}</h3>
+                        <h3 className="font-bold text-sm text-gray-900 dark:text-white mb-1 leading-tight">{cat.name}</h3>
                         <p className="text-xs text-gray-500">{cat.count} tools</p>
                       </button>
                     );

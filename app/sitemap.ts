@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { categoryToSlug } from '@/lib/categories';
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://currly-beta.vercel.app';
 
@@ -15,9 +16,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .eq('launch_status', 'Live')
     .order('launch_date', { ascending: false });
 
-  // Derive unique categories from actual tools in DB
+  // Derive unique category slugs from actual tools in DB
   const categorySet = new Set(
-    (tools || []).map((t) => t.main_category?.toLowerCase()).filter(Boolean)
+    (tools || [])
+      .map((t) => t.main_category ? categoryToSlug(t.main_category) : null)
+      .filter(Boolean) as string[]
   );
 
   const toolUrls: MetadataRoute.Sitemap = (tools || []).map((tool) => ({
