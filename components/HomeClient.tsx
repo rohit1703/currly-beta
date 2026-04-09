@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, Variants } from 'framer-motion';
+import { Globe } from 'lucide-react';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import ToolCard from '@/components/ToolCardItem';
 import { ThemeToggle } from '@/components/ThemeToggle';
