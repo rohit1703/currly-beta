@@ -74,24 +74,33 @@ export async function quickSearch(query: string): Promise<Tool[]> {
   return getCachedText(query);
 }
 
+// Cached embedding fetch — same query never hits OpenAI twice within 24h
+const getCachedEmbedding = unstable_cache(
+  async (q: string) => {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+    const res = await openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: q,
+      encoding_format: 'float',
+    });
+    return res.data[0].embedding;
+  },
+  ['query-embedding'],
+  { revalidate: 86400 } // 24 hours
+);
+
 // --- 2. SMART SEARCH (Semantic / Vector) ---
 // Uses OpenAI embeddings + pgvector. No cookies needed — vector search is a public read.
 export async function smartSearch(query: string): Promise<Tool[]> {
   if (!query || !process.env.OPENAI_API_KEY) return [];
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const supabase = createPublicClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
   try {
-    const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: query,
-      encoding_format: 'float',
-    });
-    const queryEmbedding = embeddingResponse.data[0].embedding;
+    const queryEmbedding = await getCachedEmbedding(query.toLowerCase().trim());
 
     const { data, error } = await supabase.rpc('match_tools', {
       query_embedding: queryEmbedding,
