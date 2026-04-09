@@ -7,6 +7,26 @@ import OpenAI from 'openai';
 import { Tool } from '@/types';
 import { unstable_cache } from 'next/cache';
 
+// Words to strip from natural language queries before FTS
+// e.g. "I need a free tool for image editing" → "free image editing"
+const STOP_WORDS = new Set([
+  'i', 'a', 'an', 'the', 'for', 'to', 'and', 'or', 'is', 'are', 'want',
+  'need', 'looking', 'find', 'get', 'can', 'will', 'do', 'that', 'this',
+  'with', 'in', 'on', 'at', 'by', 'from', 'of', 'it', 'my', 'me', 'we',
+  'best', 'good', 'some', 'any', 'help', 'use', 'make', 'build', 'create',
+  'tool', 'tools', 'app', 'software', 'ai', 'platform'
+]);
+
+function extractKeywords(query: string): string {
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(word => !STOP_WORDS.has(word) && word.length > 2)
+    .join(' ');
+}
+
+const COLUMNS = 'id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date';
+
 // --- 1. FAST SEARCH (Text Only - Instant & Cached) ---
 // We use createPublicClient here because unstable_cache cannot access request cookies.
 export async function quickSearch(query: string): Promise<Tool[]> {
@@ -14,23 +34,40 @@ export async function quickSearch(query: string): Promise<Tool[]> {
 
   const getCachedText = unstable_cache(
     async (q: string) => {
-      // Initialize a basic client without cookies for caching public data
       const supabase = createPublicClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
 
-      const { data } = await supabase
+      const keywords = extractKeywords(q);
+
+      // Step 1: Try FTS with extracted keywords
+      if (keywords) {
+        const { data: ftsData } = await supabase
+          .from('tools')
+          .select(COLUMNS)
+          .textSearch('fts', keywords, { type: 'websearch', config: 'english' })
+          .limit(20);
+
+        if (ftsData && ftsData.length > 0) return ftsData as Tool[];
+      }
+
+      // Step 2: FTS returned nothing — fall back to broad ilike search
+      const terms = (keywords || q).split(/\s+/).filter(Boolean);
+      const primaryTerm = terms[0];
+      if (!primaryTerm) return [];
+
+      const { data: fallbackData } = await supabase
         .from('tools')
-        .select('id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date')
-        .textSearch('fts', q, {
-          type: 'websearch',
-          config: 'english'
-        })
+        .select(COLUMNS)
+        .or(
+          terms.map(t => `name.ilike.%${t}%,description.ilike.%${t}%`).join(',')
+        )
         .limit(20);
-      return (data as Tool[]) || [];
+
+      return (fallbackData as Tool[]) || [];
     },
-    ['text-search'], 
+    ['text-search'],
     { revalidate: 3600, tags: ['tools'] }
   );
 

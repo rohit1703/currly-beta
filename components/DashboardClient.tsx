@@ -307,6 +307,18 @@ export default function DashboardClient({
                  </div>
               )}
 
+              {!isSearching && !isUpgrading && filteredTools.length === 0 && searchQuery && (
+                <div className="flex flex-col items-center justify-center py-24 text-center">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mb-4">
+                    <Search className="w-7 h-7 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">No tools found</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+                    Try a different search — describe what you want to do, like <span className="text-[#0066FF] font-medium">"automate invoices"</span> or <span className="text-[#0066FF] font-medium">"edit videos"</span>.
+                  </p>
+                </div>
+              )}
+
               {!isSearching && (
                 <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-32 transition-opacity duration-500 ${isUpgrading ? 'opacity-60' : 'opacity-100'}`}>
                   {filteredTools.map((tool) => {
