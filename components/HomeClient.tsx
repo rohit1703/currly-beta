@@ -55,23 +55,27 @@ const staggerContainer: Variants = {
 
 // --- COMPONENTS ---
 
-function StatItem({ value, label, suffix = "+" }: { value: number, label: string, suffix?: string }) {
+function StatItem({ value, label, suffix = "+", onClick, active }: { value: number, label: string, suffix?: string, onClick?: () => void, active?: boolean }) {
   const count = useCountUp(value);
   return (
-    <motion.div 
+    <motion.div
       variants={fadeInUp}
-      className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-gray-200 dark:border-white/10 shadow-sm text-center"
+      onClick={onClick}
+      className={`bg-white dark:bg-neutral-900 p-6 rounded-2xl border shadow-sm text-center transition-colors ${onClick ? 'cursor-pointer' : ''} ${active ? 'border-[#0066FF] dark:border-[#0066FF]' : 'border-gray-200 dark:border-white/10'} ${onClick ? 'hover:border-[#0066FF]/60' : ''}`}
     >
       <div className="text-4xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-1 md:mb-2 flex justify-center">
         <motion.span>{count}</motion.span>{suffix}
       </div>
-      <div className="text-xs md:text-sm font-bold text-gray-500 uppercase tracking-wider">{label}</div>
+      <div className={`text-xs md:text-sm font-bold uppercase tracking-wider ${active ? 'text-[#0066FF]' : 'text-gray-500'}`}>
+        {label}{onClick ? ' ↓' : ''}
+      </div>
     </motion.div>
   );
 }
 
 export default function HomeClient({ tools, categories: categoriesData, totalCount }: { tools: any[]; categories: { name: string; count: number; slug: string }[]; totalCount: number }) {
   const [scrollY, setScrollY] = useState(0);
+  const [showCategories, setShowCategories] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -150,25 +154,43 @@ export default function HomeClient({ tools, categories: categoriesData, totalCou
           </motion.div>
         </div>
 
-        {/* CATEGORIES GRID */}
-        {categoriesData.length > 0 && (
+        {/* STATS */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={staggerContainer}
+          className="max-w-7xl mx-auto px-4 relative grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 z-10 mb-8"
+        >
+          <StatItem value={totalCount} label="AI Tools Curated" />
+          <StatItem value={420} label="Active Members" />
+          <StatItem
+            value={categoriesData.length || 15}
+            label="Categories"
+            suffix=""
+            onClick={() => setShowCategories(v => !v)}
+            active={showCategories}
+          />
+        </motion.div>
+
+        {/* CATEGORIES GRID — revealed by clicking the Categories stat */}
+        {showCategories && categoriesData.length > 0 && (
           <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={staggerContainer}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
             className="max-w-7xl mx-auto px-4 relative z-10 mb-20 md:mb-32"
           >
-            <motion.p variants={fadeInUp} className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6 text-center md:text-left">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">
               Explore by Category
-            </motion.p>
+            </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {categoriesData.map((cat, i) => {
                 const Icon = CATEGORY_ICONS[cat.slug] || Grid2x2;
                 return (
-                  <motion.div
+                  <div
                     key={i}
-                    variants={fadeInUp}
                     onClick={() => router.push(`/category/${cat.slug}`)}
                     className="cursor-pointer bg-white dark:bg-[#111] p-4 rounded-xl border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group text-left active:scale-95"
                   >
@@ -177,60 +199,11 @@ export default function HomeClient({ tools, categories: categoriesData, totalCou
                     </div>
                     <h3 className="font-bold text-sm text-gray-900 dark:text-white leading-tight">{cat.name}</h3>
                     <p className="text-xs text-gray-400 mt-0.5">{cat.count} tools</p>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
           </motion.div>
-        )}
-
-        {/* STATS */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={staggerContainer}
-          className="max-w-7xl mx-auto px-4 relative grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 z-10 mb-20 md:mb-32"
-        >
-          <StatItem value={totalCount} label="AI Tools Curated" />
-          <StatItem value={420} label="Active Members" />
-          <StatItem value={categoriesData.length || 15} label="Categories" suffix="" />
-        </motion.div>
-
-        {/* LIVE DATA GRID */}
-        {hasTools && (
-          <div className="max-w-7xl mx-auto px-4 relative z-10 mb-24 text-left">
-             <motion.div 
-               initial={{ opacity: 0 }} 
-               whileInView={{ opacity: 1 }} 
-               viewport={{ once: true }}
-               className="flex items-center justify-between mb-6 md:mb-8"
-             >
-               <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Recently Added</h2>
-             </motion.div>
-             
-             <motion.div 
-               variants={staggerContainer}
-               initial="hidden"
-               whileInView="visible"
-               viewport={{ once: true, margin: "50px" }}
-               className="grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-             >
-              {tools.map((tool, i) => (
-                <motion.div key={tool.id} variants={fadeInUp}>
-                  <ToolCard 
-                    title={tool.name || 'Untitled'}
-                    description={tool.description || ''}
-                    category={tool.main_category || 'General'}
-                    pricing={tool.pricing_model || 'Unknown'} 
-                    image={tool.image_url || ''}
-                    url={tool.website || '#'}
-                    slug={tool.slug}
-                  />
-                </motion.div>
-              ))}
-             </motion.div>
-          </div>
         )}
 
         {/* TESTIMONIALS */}
