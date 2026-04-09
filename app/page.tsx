@@ -1,24 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/utils/supabase/admin';
 import HomeClient from '@/components/HomeClient';
 
-// Tools are public data — use the anon client directly (no auth cookie needed)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export default async function Home() {
+  // Use admin client to bypass RLS — homepage shows public tool data to everyone
+  const supabase = createAdminClient();
+
   const [{ data: tools }, { data: categoryRows }] = await Promise.all([
     supabase
       .from('tools')
       .select('id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date')
-      .eq('launch_status', 'Live')
+      .or('launch_status.eq.Live,launch_status.is.null')
       .order('launch_date', { ascending: false })
       .limit(24),
     supabase
       .from('tools')
       .select('main_category')
-      .eq('launch_status', 'Live'),
+      .or('launch_status.eq.Live,launch_status.is.null'),
   ]);
 
   // Build category counts from actual data
