@@ -221,14 +221,7 @@ export default function DashboardClient({
                      >
                         <div className="bg-black/80 text-white px-6 py-3 rounded-full flex items-center gap-3 backdrop-blur-md text-sm font-medium shadow-xl">
                            <Loader2 className="w-4 h-4 animate-spin text-[#0066FF]" />
-                           <motion.span
-                             key={loadingStep}
-                             initial={{ opacity: 0, y: 5 }}
-                             animate={{ opacity: 1, y: 0 }}
-                             exit={{ opacity: 0, y: -5 }}
-                           >
-                             {loadingTexts[loadingStep]}
-                           </motion.span>
+                           <span>Searching...</span>
                         </div>
                      </motion.div>
                    )}
