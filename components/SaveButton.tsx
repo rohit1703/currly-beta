@@ -9,19 +9,42 @@ export default function SaveButton({
   initialSaved,
   isLoggedIn,
   redirectTo,
+  compact = false,
 }: {
   toolId: string;
   initialSaved: boolean;
   isLoggedIn: boolean;
   redirectTo?: string;
+  compact?: boolean;
 }) {
   const [saved, setSaved] = useState(initialSaved);
   const [pending, startTransition] = useTransition();
+
+  const toggle = () => {
+    startTransition(async () => {
+      if (saved) {
+        await unsaveTool(toolId);
+        setSaved(false);
+      } else {
+        await saveTool(toolId);
+        setSaved(true);
+      }
+    });
+  };
 
   if (!isLoggedIn) {
     const loginHref = redirectTo
       ? `/login?redirectTo=${encodeURIComponent(redirectTo)}`
       : '/login';
+
+    if (compact) {
+      return (
+        <a href={loginHref} title="Save to Stack" className="w-8 h-8 flex items-center justify-center rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-400 hover:text-[#0066FF] hover:border-[#0066FF] transition-colors shrink-0">
+          <Bookmark className="w-4 h-4" />
+        </a>
+      );
+    }
+
     return (
       <a
         href={loginHref}
@@ -32,20 +55,33 @@ export default function SaveButton({
     );
   }
 
+  if (compact) {
+    return (
+      <button
+        disabled={pending}
+        onClick={toggle}
+        title={saved ? 'Unsave' : 'Save to Stack'}
+        className={`w-8 h-8 flex items-center justify-center rounded-xl border transition-colors disabled:opacity-50 shrink-0 ${
+          saved
+            ? 'bg-[#0066FF] border-[#0066FF] text-white hover:bg-[#0052CC]'
+            : 'border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 text-gray-400 hover:text-[#0066FF] hover:border-[#0066FF]'
+        }`}
+      >
+        {pending ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        ) : saved ? (
+          <BookmarkCheck className="w-3.5 h-3.5" />
+        ) : (
+          <Bookmark className="w-3.5 h-3.5" />
+        )}
+      </button>
+    );
+  }
+
   return (
     <button
       disabled={pending}
-      onClick={() => {
-        startTransition(async () => {
-          if (saved) {
-            await unsaveTool(toolId);
-            setSaved(false);
-          } else {
-            await saveTool(toolId);
-            setSaved(true);
-          }
-        });
-      }}
+      onClick={toggle}
       className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-colors disabled:opacity-60 ${
         saved
           ? 'bg-[#0066FF] text-white hover:bg-[#0052CC]'

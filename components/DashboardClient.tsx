@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import { smartSearch, logToolClick } from '@/actions/search';
 import CompareModal from '@/components/CompareModal';
+import SaveButton from '@/components/SaveButton';
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
   'Marketing': Zap,
@@ -49,12 +50,16 @@ export default function DashboardClient({
   isFuzzy = false,
   allCategories = [],
   totalCount = 0,
+  isLoggedIn = false,
+  savedToolIds = [],
 }: {
   initialTools: any[];
   searchQuery: string;
   isFuzzy?: boolean;
   allCategories?: { name: string; count: number }[];
   totalCount?: number;
+  isLoggedIn?: boolean;
+  savedToolIds?: string[];
 }) {
   // --- STATE ---
   // Semantic search results come from the server — no client-side upgrade needed
@@ -387,9 +392,17 @@ export default function DashboardClient({
                             <div className="w-14 h-14 bg-[#FDFBF7] dark:bg-black rounded-2xl p-2 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-inner overflow-hidden">
                               <img src={logo || `https://api.dicebear.com/7.x/initials/svg?seed=${tool.name}`} className="w-full h-full object-contain rounded-lg" onError={(e) => {e.currentTarget.style.display='none'}} />
                             </div>
-                            <span className={`text-[10px] font-bold px-3 py-1 rounded-full border tracking-wide ${tool.pricing_model?.toLowerCase().includes('free') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/5 text-gray-500'}`}>
-                              {tool.pricing_model || 'PAID'}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <SaveButton
+                                toolId={tool.id}
+                                initialSaved={savedToolIds.includes(tool.id)}
+                                isLoggedIn={isLoggedIn}
+                                compact
+                              />
+                              <span className={`text-[10px] font-bold px-3 py-1 rounded-full border tracking-wide ${tool.pricing_model?.toLowerCase().includes('free') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/5 text-gray-500'}`}>
+                                {tool.pricing_model || 'PAID'}
+                              </span>
+                            </div>
                           </div>
                           {/* #5 — Clicking name preserves the search query in the back link */}
                           <Link
