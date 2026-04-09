@@ -70,7 +70,7 @@ function StatItem({ value, label, suffix = "+" }: { value: number, label: string
   );
 }
 
-export default function HomeClient({ tools, categories: categoriesData }: { tools: any[]; categories: { name: string; count: number; slug: string }[] }) {
+export default function HomeClient({ tools, categories: categoriesData, totalCount }: { tools: any[]; categories: { name: string; count: number; slug: string }[]; totalCount: number }) {
   const [scrollY, setScrollY] = useState(0);
   const router = useRouter();
 
@@ -137,7 +137,7 @@ export default function HomeClient({ tools, categories: categoriesData }: { tool
 
             <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-500 dark:text-gray-400 mb-8 md:mb-12 max-w-2xl mx-auto leading-relaxed font-medium px-4">
               Stop searching. Start building. <br className="hidden md:block"/>
-              <span className="text-gray-900 dark:text-white font-bold">{tools.length}+ tools</span> curated by experts.
+              <span className="text-gray-900 dark:text-white font-bold">{totalCount}+ tools</span> curated by experts.
             </motion.p>
 
             {/* SEARCH BAR - FIXED WIDTH FOR MOBILE */}
@@ -192,9 +192,9 @@ export default function HomeClient({ tools, categories: categoriesData }: { tool
           variants={staggerContainer}
           className="max-w-7xl mx-auto px-4 relative grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 z-10 mb-20 md:mb-32"
         >
-          <StatItem value={tools.length || 0} label="AI Tools Curated" />
-          <StatItem value={categoriesData.length} label="Categories" suffix="" />
-          <StatItem value={100} label="% Free to Search" suffix="%" />
+          <StatItem value={totalCount} label="AI Tools Curated" />
+          <StatItem value={420} label="Active Members" />
+          <StatItem value={categoriesData.length || 15} label="Categories" suffix="" />
         </motion.div>
 
         {/* LIVE DATA GRID */}
