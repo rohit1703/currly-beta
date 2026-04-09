@@ -119,7 +119,25 @@ export async function smartSearch(query: string): Promise<Tool[]> {
   }
 }
 
-// --- 3. FALLBACK / UTILS ---
+// --- 3. SUGGESTIONS (Autocomplete) ---
+export async function getSuggestions(query: string): Promise<string[]> {
+  if (!query || query.length < 2) return [];
+
+  const supabase = createPublicClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  const { data } = await supabase
+    .from('tools')
+    .select('name')
+    .ilike('name', `%${query}%`)
+    .limit(6);
+
+  return (data || []).map((t: any) => t.name);
+}
+
+// --- 4. FALLBACK / UTILS ---
 export async function searchTools(query: string): Promise<Tool[]> {
   return smartSearch(query);
 }

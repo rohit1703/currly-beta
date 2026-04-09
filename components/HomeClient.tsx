@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, Variants } from 'framer-motion';
 import { Search, ArrowRight, Code, PenTool, Globe, Zap, LayoutGrid } from 'lucide-react';
+import SearchAutocomplete from '@/components/SearchAutocomplete';
 import ToolCard from '@/components/ToolCardItem';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Logo } from '@/components/Logo';
@@ -52,7 +53,6 @@ function StatItem({ value, label, suffix = "+" }: { value: number, label: string
 }
 
 export default function HomeClient({ tools }: { tools: any[] }) {
-  const [query, setQuery] = useState('');
   const [scrollY, setScrollY] = useState(0);
   const router = useRouter();
 
@@ -61,11 +61,6 @@ export default function HomeClient({ tools }: { tools: any[] }) {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) router.push(`/dashboard?q=${encodeURIComponent(query)}`);
-  };
 
   const scrollToSearch = () => {
     const element = document.getElementById('search-section');
@@ -136,22 +131,10 @@ export default function HomeClient({ tools }: { tools: any[] }) {
 
             {/* SEARCH BAR - FIXED WIDTH FOR MOBILE */}
             <motion.div id="search-section" variants={fadeInUp} className="relative w-full max-w-3xl mx-auto z-10 px-2">
-              <form onSubmit={handleSearch} className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-[#0066FF] to-cyan-500 rounded-2xl opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
-                <div className="relative flex items-center gap-2 md:gap-4 bg-white dark:bg-[#111] rounded-2xl p-2 md:p-3 shadow-2xl border border-gray-200 dark:border-white/10">
-                  <Search className="w-5 h-5 text-gray-400 ml-2" />
-                  <input 
-                    type="text" 
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Describe your problem..."
-                    className="flex-1 text-base md:text-lg bg-transparent border-none focus:ring-0 outline-none h-10 md:h-12 text-gray-900 dark:text-white placeholder-gray-400 w-full min-w-0"
-                  />
-                  <button type="submit" className="bg-[#0066FF] hover:bg-[#0052CC] text-white px-4 md:px-8 py-2 md:py-4 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 whitespace-nowrap text-sm md:text-base">
-                    Search
-                  </button>
-                </div>
-              </form>
+              <SearchAutocomplete
+                placeholder="Describe your problem..."
+                containerClassName="w-full"
+              />
             </motion.div>
           </motion.div>
         </div>

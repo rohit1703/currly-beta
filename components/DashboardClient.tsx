@@ -15,6 +15,7 @@ import ToolCard from '@/components/ToolCardItem';
 import AISearchSummary from '@/components/AISearchSummary';
 import AdoptionModal from '@/components/AdoptionModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import SearchAutocomplete from '@/components/SearchAutocomplete';
 
 export default function DashboardClient({
   initialTools,
@@ -193,22 +194,11 @@ export default function DashboardClient({
           {activeTab === 'search' && (
             <>
               <div className="max-w-2xl mx-auto relative mb-10 mt-4">
-                 <form action="/dashboard" onSubmit={handleSearchSubmit} className="relative">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[#0066FF] to-cyan-500 rounded-full opacity-20 blur"></div>
-                    <div className="relative flex items-center bg-white dark:bg-[#111] rounded-full shadow-lg p-1 pl-5">
-                       <Search className="w-5 h-5 text-gray-400 mr-3" />
-                       <input 
-                         name="q"
-                         type="text" 
-                         defaultValue={searchQuery}
-                         placeholder="Describe your problem (e.g. 'I need to automate invoices')..."
-                         className="flex-1 bg-transparent border-none outline-none text-base text-[#1A1A1A] dark:text-white placeholder-gray-400 h-12"
-                       />
-                       <button type="submit" className="bg-[#0066FF] hover:bg-[#0052CC] text-white px-6 py-2.5 rounded-full font-bold transition-all">
-                         Search
-                       </button>
-                    </div>
-                 </form>
+                 <SearchAutocomplete
+                   defaultValue={searchQuery}
+                   placeholder="Describe your problem (e.g. 'I need to automate invoices')..."
+                   onSubmit={handleSearchSubmit}
+                 />
                  
                  {/* LEGACY LOADING (Full screen blocking) */}
                  <AnimatePresence>
