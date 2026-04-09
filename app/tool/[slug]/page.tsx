@@ -22,12 +22,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const { data: tool } = await supabase.from('tools').select('name, description, image_url').eq('slug', slug).single();
   if (!tool) return { title: 'Tool Not Found' };
+  const fallbackDesc = `${tool.name} is a${tool.pricing_model ? ` ${tool.pricing_model.toLowerCase()}` : 'n'} AI tool${tool.main_category ? ` for ${tool.main_category.toLowerCase()}` : ''}. Discover features, pricing, and alternatives on Currly.`;
+  const description = tool.description?.substring(0, 160) || fallbackDesc;
   return {
     title: `${tool.name} — AI Tool Review & Pricing | Currly`,
-    description: tool.description?.substring(0, 160) || `Discover ${tool.name} on Currly — pricing, features, and alternatives.`,
+    description,
     openGraph: {
       title: `${tool.name} on Currly`,
-      description: tool.description?.substring(0, 200),
+      description: tool.description?.substring(0, 200) || fallbackDesc,
       images: tool.image_url ? [tool.image_url] : [],
     },
   };
@@ -172,7 +174,7 @@ export default async function ToolPage({
                   Visit Website <ExternalLink className="w-4 h-4" />
                 </a>
               )}
-              <SaveButton toolId={tool.id} initialSaved={isSaved} isLoggedIn={!!user} />
+              <SaveButton toolId={tool.id} initialSaved={isSaved} isLoggedIn={!!user} redirectTo={`/tool/${tool.slug}`} />
             </div>
           </div>
         </div>

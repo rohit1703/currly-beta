@@ -8,18 +8,23 @@ export default function SaveButton({
   toolId,
   initialSaved,
   isLoggedIn,
+  redirectTo,
 }: {
   toolId: string;
   initialSaved: boolean;
   isLoggedIn: boolean;
+  redirectTo?: string;
 }) {
   const [saved, setSaved] = useState(initialSaved);
   const [pending, startTransition] = useTransition();
 
   if (!isLoggedIn) {
+    const loginHref = redirectTo
+      ? `/login?redirectTo=${encodeURIComponent(redirectTo)}`
+      : '/login';
     return (
       <a
-        href="/login"
+        href={loginHref}
         className="inline-flex items-center gap-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 px-5 py-2.5 rounded-xl font-bold text-sm hover:border-[#0066FF] transition-colors"
       >
         <Bookmark className="w-4 h-4" /> Save to Stack
@@ -54,7 +59,7 @@ export default function SaveButton({
       ) : (
         <Bookmark className="w-4 h-4" />
       )}
-      {saved ? 'Saved' : 'Save to Stack'}
+      {pending ? '' : saved ? 'Saved' : 'Save to Stack'}
     </button>
   );
 }

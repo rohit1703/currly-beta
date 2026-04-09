@@ -18,6 +18,7 @@ import AISearchSummary from '@/components/AISearchSummary';
 import { motion, AnimatePresence } from 'framer-motion';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import { smartSearch, logToolClick } from '@/actions/search';
+import CompareModal from '@/components/CompareModal';
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
   'Marketing': Zap,
@@ -66,6 +67,7 @@ export default function DashboardClient({
 
   // INTERACTION STATE
   const [compareList, setCompareList] = useState<any[]>([]);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
   const [isSearching, setIsSearching] = useState(false);
 
@@ -444,10 +446,19 @@ export default function DashboardClient({
 
           {compareList.length > 0 && (
              <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#1A1A1A] text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-6 z-50 animate-in slide-in-from-bottom-10 border border-white/10 w-[90%] md:w-auto justify-between md:justify-start">
-                <span className="font-bold text-sm">{compareList.length} Selected</span>
-                <button className="text-sm font-bold hover:text-[#0066FF]">Compare Now</button>
+                <span className="font-bold text-sm">{compareList.length} of 3 selected</span>
+                <button
+                  onClick={() => setIsCompareOpen(true)}
+                  className="text-sm font-bold hover:text-[#0066FF] transition-colors"
+                >
+                  Compare Now →
+                </button>
                 <button onClick={() => setCompareList([])}><X className="w-4 h-4" /></button>
              </div>
+          )}
+
+          {isCompareOpen && compareList.length > 0 && (
+            <CompareModal tools={compareList} onClose={() => setIsCompareOpen(false)} />
           )}
         </div>
       </main>
