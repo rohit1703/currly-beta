@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, TrendingUp } from 'lucide-react';
-import { getSuggestions, logSearch, type Suggestion } from '@/actions/search';
+import { getSuggestions, logSearch, logSearchEvent, type Suggestion } from '@/actions/search';
 
 interface Props {
   defaultValue?: string;
@@ -81,7 +81,10 @@ export default function SearchAutocomplete({
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     setOpen(false);
-    if (value.trim()) logSearch(value.trim());
+    if (value.trim()) {
+      logSearch(value.trim());
+      logSearchEvent(value.trim());
+    }
     if (onSubmit) onSubmit(e);
   };
 

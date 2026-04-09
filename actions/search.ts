@@ -166,6 +166,34 @@ export async function getSuggestions(query: string): Promise<Suggestion[]> {
 }
 
 // --- 4. LOG SEARCH ---
+export async function logSearchEvent(query: string): Promise<void> {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized || normalized.length < 2) return;
+
+  const supabase = createPublicClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  await supabase.from('search_events').insert({
+    query: normalized,
+    searched_at: new Date().toISOString(),
+  });
+}
+
+export async function logToolClick(toolId: string, query?: string): Promise<void> {
+  const supabase = createPublicClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  await supabase.from('tool_clicks').insert({
+    tool_id: toolId,
+    query: query?.trim().toLowerCase() || null,
+    clicked_at: new Date().toISOString(),
+  });
+}
+
 export async function logSearch(query: string): Promise<void> {
   const normalized = query.trim().toLowerCase();
   if (!normalized || normalized.length < 2) return;
