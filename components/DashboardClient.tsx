@@ -20,10 +20,12 @@ import { smartSearch, logToolClick } from '@/actions/search';
 
 export default function DashboardClient({
   initialTools,
-  searchQuery
+  searchQuery,
+  isFuzzy = false,
 }: {
   initialTools: any[],
-  searchQuery: string
+  searchQuery: string,
+  isFuzzy?: boolean,
 }) {
   // --- STATE ---
   // Semantic search results come from the server — no client-side upgrade needed
@@ -242,9 +244,15 @@ export default function DashboardClient({
 
               </div>
 
+              {!isSearching && isFuzzy && filteredTools.length > 0 && (
+                <div className="mb-6 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 rounded-xl">
+                  <Search className="w-4 h-4 shrink-0" />
+                  No exact matches — showing approximate results for <span className="font-semibold ml-1">"{searchQuery}"</span>
+                </div>
+              )}
+
               {!isSearching && searchQuery && (
                  <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
-                   {/* Pass current filtered tools to the summary */}
                    <AISearchSummary query={searchQuery} tools={filteredTools} />
                  </div>
               )}

@@ -29,11 +29,11 @@ const COLUMNS = 'id, name, slug, description, main_category, pricing_model, imag
 
 // --- 1. FAST SEARCH (Text Only - Instant & Cached) ---
 // We use createPublicClient here because unstable_cache cannot access request cookies.
-export async function quickSearch(query: string): Promise<Tool[]> {
-  if (!query) return [];
+export async function quickSearch(query: string): Promise<{ tools: Tool[]; fuzzy: boolean }> {
+  if (!query) return { tools: [], fuzzy: false };
 
   const getCachedText = unstable_cache(
-    async (q: string) => {
+    async (q: string): Promise<{ tools: Tool[]; fuzzy: boolean }> => {
       const supabase = createPublicClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -49,23 +49,29 @@ export async function quickSearch(query: string): Promise<Tool[]> {
           .textSearch('fts', keywords, { type: 'websearch', config: 'english' })
           .limit(20);
 
-        if (ftsData && ftsData.length > 0) return ftsData as Tool[];
+        if (ftsData && ftsData.length > 0) return { tools: ftsData as Tool[], fuzzy: false };
       }
 
       // Step 2: FTS returned nothing — fall back to broad ilike search
       const terms = (keywords || q).split(/\s+/).filter(Boolean);
       const primaryTerm = terms[0];
-      if (!primaryTerm) return [];
+      if (!primaryTerm) return { tools: [], fuzzy: false };
 
       const { data: fallbackData } = await supabase
         .from('tools')
         .select(COLUMNS)
-        .or(
-          terms.map(t => `name.ilike.%${t}%,description.ilike.%${t}%`).join(',')
-        )
+        .or(terms.map(t => `name.ilike.%${t}%,description.ilike.%${t}%`).join(','))
         .limit(20);
 
-      return (fallbackData as Tool[]) || [];
+      if (fallbackData && fallbackData.length > 0) {
+        return { tools: fallbackData as Tool[], fuzzy: false };
+      }
+
+      // Step 3: Nothing matched — try trigram fuzzy search (catches typos)
+      const { data: fuzzyData } = await supabase
+        .rpc('fuzzy_search_tools', { search_query: q, match_count: 20 });
+
+      return { tools: (fuzzyData as Tool[]) || [], fuzzy: (fuzzyData?.length ?? 0) > 0 };
     },
     ['text-search'],
     { revalidate: 3600, tags: ['tools'] }
