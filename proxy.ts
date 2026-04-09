@@ -36,8 +36,12 @@ export async function proxy(request: NextRequest) {
 
   // Protect /admin — only rohitagentx@gmail.com can access
   if (request.nextUrl.pathname.startsWith('/admin')) {
+    // Always allow /admin/login through
+    if (request.nextUrl.pathname === '/admin/login') {
+      return supabaseResponse
+    }
     if (!user || user.email !== 'rohitagentx@gmail.com') {
-      return NextResponse.redirect(new URL('/', request.url))
+      return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }
 
@@ -46,7 +50,7 @@ export async function proxy(request: NextRequest) {
 
 export default proxy
 
-export const config = {
+export const proxyConfig = {
   matcher: [
     // Run on all routes except static files and Next.js internals
     '/((?!_next/static|_next/image|favicon.ico|icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',

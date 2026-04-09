@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, Variants } from 'framer-motion';
-import { Search, ArrowRight, Code, PenTool, Globe, Zap, LayoutGrid } from 'lucide-react';
+import { Globe, Code, PenTool, Zap, LayoutGrid, Video, Mic, ImageIcon, Database, DollarSign, Users, Scale, TrendingUp, MessageCircle, Grid2x2, FileText } from 'lucide-react';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import ToolCard from '@/components/ToolCardItem';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -13,6 +13,24 @@ import UserNav from '@/components/UserNav';
 import { useCountUp } from '@/hooks/useCountUp';
 import { Testimonials } from '@/components/TestimonialsSection';
 import { Footer } from '@/components/FooterSection';
+
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  coding: Code,
+  design: PenTool,
+  writing: FileText,
+  marketing: Zap,
+  productivity: LayoutGrid,
+  video: Video,
+  audio: Mic,
+  image: ImageIcon,
+  data: Database,
+  finance: DollarSign,
+  hr: Users,
+  legal: Scale,
+  sales: TrendingUp,
+  support: MessageCircle,
+  other: Grid2x2,
+};
 
 // --- MOBILE OPTIMIZED VARIANTS ---
 const fadeInUp: Variants = {
@@ -52,7 +70,7 @@ function StatItem({ value, label, suffix = "+" }: { value: number, label: string
   );
 }
 
-export default function HomeClient({ tools }: { tools: any[] }) {
+export default function HomeClient({ tools, categories: categoriesData }: { tools: any[]; categories: { name: string; count: number; slug: string }[] }) {
   const [scrollY, setScrollY] = useState(0);
   const router = useRouter();
 
@@ -68,13 +86,6 @@ export default function HomeClient({ tools }: { tools: any[] }) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
   };
-
-  const categories = [
-    { name: "Marketing", icon: Zap, slug: "marketing" },
-    { name: "Dev", icon: Code, slug: "coding" },
-    { name: "Design", icon: PenTool, slug: "video" },
-    { name: "Productivity", icon: LayoutGrid, slug: "productivity" },
-  ];
 
   const hasTools = tools && tools.length > 0;
 
@@ -126,7 +137,7 @@ export default function HomeClient({ tools }: { tools: any[] }) {
 
             <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-500 dark:text-gray-400 mb-8 md:mb-12 max-w-2xl mx-auto leading-relaxed font-medium px-4">
               Stop searching. Start building. <br className="hidden md:block"/>
-              <span className="text-gray-900 dark:text-white font-bold">712+ tools</span> curated by experts.
+              <span className="text-gray-900 dark:text-white font-bold">{tools.length}+ tools</span> curated by experts.
             </motion.p>
 
             {/* SEARCH BAR - FIXED WIDTH FOR MOBILE */}
@@ -139,45 +150,51 @@ export default function HomeClient({ tools }: { tools: any[] }) {
           </motion.div>
         </div>
 
-        {/* CATEGORIES GRID (2 Col Mobile) */}
-        <motion.div 
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-          variants={staggerContainer}
-          className="max-w-7xl mx-auto px-4 relative z-10 mb-20 md:mb-32"
-        >
-           <motion.p variants={fadeInUp} className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6 text-center md:text-left">
-             Explore by Category
-           </motion.p>
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              {categories.map((cat, i) => (
-                <motion.div 
-                  key={i} 
-                  variants={fadeInUp}
-                  onClick={() => router.push(`/category/${cat.slug}`)} 
-                  className="cursor-pointer bg-white dark:bg-[#111] p-4 md:p-6 rounded-xl border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group text-left active:scale-95"
-                >
-                   <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-50 dark:bg-white/5 rounded-lg flex items-center justify-center text-[#0066FF] mb-3 group-hover:scale-110 transition-transform">
-                     <cat.icon className="w-4 h-4 md:w-5 md:h-5" />
-                   </div>
-                   <h3 className="font-bold text-sm md:text-base text-gray-900 dark:text-white">{cat.name}</h3>
-                </motion.div>
-              ))}
-           </div>
-        </motion.div>
+        {/* CATEGORIES GRID */}
+        {categoriesData.length > 0 && (
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            variants={staggerContainer}
+            className="max-w-7xl mx-auto px-4 relative z-10 mb-20 md:mb-32"
+          >
+            <motion.p variants={fadeInUp} className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6 text-center md:text-left">
+              Explore by Category
+            </motion.p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {categoriesData.map((cat, i) => {
+                const Icon = CATEGORY_ICONS[cat.slug] || Grid2x2;
+                return (
+                  <motion.div
+                    key={i}
+                    variants={fadeInUp}
+                    onClick={() => router.push(`/category/${cat.slug}`)}
+                    className="cursor-pointer bg-white dark:bg-[#111] p-4 rounded-xl border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group text-left active:scale-95"
+                  >
+                    <div className="w-8 h-8 bg-blue-50 dark:bg-white/5 rounded-lg flex items-center justify-center text-[#0066FF] mb-2.5 group-hover:scale-110 transition-transform">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-bold text-sm text-gray-900 dark:text-white leading-tight">{cat.name}</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">{cat.count} tools</p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
 
         {/* STATS */}
-        <motion.div 
+        <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
           variants={staggerContainer}
           className="max-w-7xl mx-auto px-4 relative grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 z-10 mb-20 md:mb-32"
         >
-           <StatItem value={712} label="AI Tools Curated" />
-           <StatItem value={420} label="Active Members" />
-           <StatItem value={15} label="Categories" />
+          <StatItem value={tools.length || 0} label="AI Tools Curated" />
+          <StatItem value={categoriesData.length} label="Categories" suffix="" />
+          <StatItem value={100} label="% Free to Search" suffix="%" />
         </motion.div>
 
         {/* LIVE DATA GRID */}
