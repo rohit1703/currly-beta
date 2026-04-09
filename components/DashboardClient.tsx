@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Search, CheckSquare, Square, X, MapPin,
-  Clock, Loader2, LayoutGrid, ExternalLink,
+  Clock, Loader2, LayoutGrid, ExternalLink, Star,
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -13,7 +14,7 @@ import MobileMenu from '@/components/MobileMenu';
 import AISearchSummary from '@/components/AISearchSummary';
 import { motion, AnimatePresence } from 'framer-motion';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
-import { smartSearch, logToolClick } from '@/actions/search';
+import { smartSearch, logToolClick, loadMoreTools } from '@/actions/search';
 import CompareModal from '@/components/CompareModal';
 import SaveButton from '@/components/SaveButton';
 import { getCategoryIcon, categoryToSlug } from '@/lib/categories';
@@ -50,6 +51,10 @@ export default function DashboardClient({
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'search' | 'browse'>('search');
   const [isSearching, setIsSearching] = useState(false);
+
+  // PAGINATION
+  const [hasMore, setHasMore] = useState(initialTools.length >= 50);
+  const [isLoadingMore, startLoadMore] = useTransition();
 
   // Sync tools when server sends new results (e.g. after navigation)
   useEffect(() => {
@@ -136,6 +141,14 @@ export default function DashboardClient({
       if (compareList.length < 3) setCompareList([...compareList, tool]);
       else alert("You can only compare up to 3 tools.");
     }
+  };
+
+  const handleLoadMore = () => {
+    startLoadMore(async () => {
+      const more = await loadMoreTools(tools.length);
+      setTools(prev => [...prev, ...more]);
+      setHasMore(more.length >= 24);
+    });
   };
 
   // --- SIDEBAR COMPONENT ---
@@ -357,13 +370,14 @@ export default function DashboardClient({
               )}
 
               {!isSearching && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-10 md:pb-32">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-6">
                   {filteredTools.map((tool) => {
                       const logo = getLogo(tool);
                       const isSelected = compareList.find(t => t.id === tool.id);
                       const isNew = tool.launch_date
                         ? (Date.now() - new Date(tool.launch_date).getTime()) < 7 * 24 * 60 * 60 * 1000
                         : false;
+                      const isFeatured = !!tool.is_featured;
                       return (
                         <div key={tool.id} className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col relative cursor-pointer`}>
                           {/* Stretched link — covers whole card */}
@@ -374,15 +388,30 @@ export default function DashboardClient({
                             aria-label={tool.name}
                           />
 
-                          {isNew && (
-                            <span className="absolute top-5 left-5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white tracking-wide z-10">
-                              NEW
-                            </span>
-                          )}
+                          <div className="absolute top-5 left-5 flex gap-1.5 z-10">
+                            {isNew && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white tracking-wide">
+                                NEW
+                              </span>
+                            )}
+                            {isFeatured && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-white tracking-wide flex items-center gap-0.5">
+                                <Star className="w-2.5 h-2.5" /> PICK
+                              </span>
+                            )}
+                          </div>
 
                           <div className="flex justify-between items-start mb-6 relative z-10">
                             <div className="w-14 h-14 bg-[#FDFBF7] dark:bg-black rounded-2xl p-2 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-inner overflow-hidden">
-                              <img src={logo || `https://api.dicebear.com/7.x/initials/svg?seed=${tool.name}`} className="w-full h-full object-contain rounded-lg" onError={(e) => {e.currentTarget.style.display='none'}} />
+                              <Image
+                                src={logo || `https://api.dicebear.com/7.x/initials/svg?seed=${tool.name}`}
+                                alt={tool.name}
+                                width={56}
+                                height={56}
+                                className="w-full h-full object-contain rounded-lg"
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                unoptimized={!logo}
+                              />
                             </div>
                             <div className="flex items-center gap-2">
                               <SaveButton
@@ -410,6 +439,19 @@ export default function DashboardClient({
                         </div>
                       );
                   })}
+                </div>
+              )}
+
+              {!isSearching && !searchQuery && hasMore && filteredTools.length > 0 && (
+                <div className="text-center pb-32 pt-4">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore}
+                    className="bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 px-8 py-3 rounded-full font-bold text-sm hover:border-[#0066FF] hover:text-[#0066FF] transition-colors disabled:opacity-60 flex items-center gap-2 mx-auto"
+                  >
+                    {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {isLoadingMore ? 'Loading...' : 'Load more tools'}
+                  </button>
                 </div>
               )}
             </>

@@ -14,6 +14,7 @@ import { useCountUp } from '@/hooks/useCountUp';
 import { Testimonials } from '@/components/TestimonialsSection';
 import { Footer } from '@/components/FooterSection';
 import { getCategoryIcon, categoryToSlug } from '@/lib/categories';
+import NewsletterSection from '@/components/NewsletterSection';
 
 // --- MOBILE OPTIMIZED VARIANTS ---
 const fadeInUp: Variants = {
@@ -193,8 +194,11 @@ export default function HomeClient({ tools, categories: categoriesData, totalCou
 
         {/* TESTIMONIALS */}
         <Testimonials />
+
+        {/* NEWSLETTER */}
+        <NewsletterSection />
       </main>
-      
+
       <Footer />
     </div>
   );

@@ -2,6 +2,7 @@ import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -124,7 +125,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
               <div className="flex items-start justify-between mb-5">
                 <div className="w-12 h-12 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10 flex items-center justify-center overflow-hidden shrink-0">
                   {tool.image_url ? (
-                    <img src={tool.image_url} alt={tool.name} className="w-full h-full object-contain p-1" />
+                    <Image src={tool.image_url} alt={tool.name} width={48} height={48} className="w-full h-full object-contain p-1" />
                   ) : (
                     <span className="text-lg font-bold text-gray-400">{tool.name[0]}</span>
                   )}

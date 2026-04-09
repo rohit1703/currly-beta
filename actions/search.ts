@@ -2,10 +2,11 @@
 
 import { createClient as createServerClient } from '@/utils/supabase/server';
 import { createClient as createPublicClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import OpenAI from 'openai';
 import { Tool } from '@/types';
 import { unstable_cache } from 'next/cache';
+import { rateLimit } from '@/lib/rate-limit';
 
 // Words to strip from natural language queries before FTS
 // e.g. "I need a free tool for image editing" → "free image editing"
@@ -25,12 +26,19 @@ function extractKeywords(query: string): string {
     .join(' ');
 }
 
-const COLUMNS = 'id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date';
+const COLUMNS = 'id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date, is_featured';
 
 // --- 1. FAST SEARCH (Text Only - Instant & Cached) ---
 // We use createPublicClient here because unstable_cache cannot access request cookies.
 export async function quickSearch(query: string): Promise<{ tools: Tool[]; fuzzy: boolean }> {
   if (!query) return { tools: [], fuzzy: false };
+
+  // Rate limit: 30 searches per minute per IP
+  const headersList = await headers();
+  const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (!rateLimit(`search:${ip}`, 30, 60_000)) {
+    return { tools: [], fuzzy: false };
+  }
 
   const getCachedText = unstable_cache(
     async (q: string): Promise<{ tools: Tool[]; fuzzy: boolean }> => {
@@ -233,8 +241,26 @@ export async function getLatestTools(limit: number = 50): Promise<Tool[]> {
 
   const { data } = await supabase
     .from('tools')
-    .select('id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date')
+    .select(COLUMNS)
+    .eq('launch_status', 'Live')
     .order('launch_date', { ascending: false })
     .limit(limit);
+  return (data as Tool[]) || [];
+}
+
+// --- 5. PAGINATED LOAD MORE ---
+export async function loadMoreTools(offset: number, limit: number = 24): Promise<Tool[]> {
+  const supabase = createPublicClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  const { data } = await supabase
+    .from('tools')
+    .select(COLUMNS)
+    .eq('launch_status', 'Live')
+    .order('launch_date', { ascending: false })
+    .range(offset, offset + limit - 1);
+
   return (data as Tool[]) || [];
 }

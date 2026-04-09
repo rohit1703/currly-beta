@@ -3,10 +3,16 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, ExternalLink, Globe, Tag, IndianRupee } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Globe, Tag, IndianRupee, GitCompare } from 'lucide-react';
 import SaveButton from '@/components/SaveButton';
+import ShareButtons from '@/components/ShareButtons';
+import UpvoteButton from '@/components/UpvoteButton';
+import ReviewSection from '@/components/ReviewSection';
+import CommentSection from '@/components/CommentSection';
 import { categoryToSlug } from '@/lib/categories';
+import { getUpvoteState } from '@/actions/upvote';
 
 const supabase = createAdminClient();
 
@@ -51,9 +57,10 @@ export default async function ToolPage({
   const { slug } = await params;
   const { from } = await searchParams;
 
-  // #5 — Preserve search: back button returns to the search that led here
   const backHref = from ? `/dashboard?q=${encodeURIComponent(from)}` : '/dashboard';
   const backLabel = from ? `← Back to "${from}"` : '← Back to Search';
+
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://currly-beta.vercel.app';
 
   // Get user session + tool data in parallel
   const userSupabase = createClient(await cookies());
@@ -61,33 +68,49 @@ export default async function ToolPage({
     userSupabase.auth.getUser(),
     supabase
       .from('tools')
-      .select('id, name, slug, website, description, image_url, main_category, pricing_model, is_india_based, launch_date')
+      .select('id, name, slug, website, description, image_url, main_category, pricing_model, is_india_based, launch_date, is_featured')
       .eq('slug', slug)
       .single(),
   ]);
 
   if (!tool) return notFound();
 
-  // Check if tool is already saved by this user
-  let isSaved = false;
-  if (user) {
-    const { data: saved } = await userSupabase
-      .from('saved_tools')
-      .select('id')
-      .eq('user_id', user.id)
+  // Get saved state + upvote state + related tools + reviews + comments in parallel
+  const [savedResult, upvoteState, { data: relatedTools }, { data: reviews }, { data: comments }] = await Promise.all([
+    user
+      ? userSupabase.from('saved_tools').select('id').eq('user_id', user.id).eq('tool_id', tool.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    getUpvoteState(tool.id),
+    supabase
+      .from('tools')
+      .select('id, name, slug, description, image_url, pricing_model')
+      .eq('main_category', tool.main_category)
+      .eq('launch_status', 'Live')
+      .neq('id', tool.id)
+      .limit(4),
+    supabase
+      .from('tool_reviews')
+      .select('id, rating, body, created_at, user_id')
       .eq('tool_id', tool.id)
-      .maybeSingle();
-    isSaved = !!saved;
-  }
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('tool_comments')
+      .select('id, body, created_at, user_id')
+      .eq('tool_id', tool.id)
+      .order('created_at', { ascending: false }),
+  ]);
 
-  // #6 — Related tools from same category
-  const { data: relatedTools } = await supabase
-    .from('tools')
-    .select('id, name, slug, description, image_url, pricing_model')
-    .eq('main_category', tool.main_category)
-    .eq('launch_status', 'Live')
-    .neq('id', tool.id)
-    .limit(4);
+  const isSaved = !!savedResult.data;
+
+  // Compute average rating
+  const avgRating = reviews && reviews.length > 0
+    ? reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length
+    : 0;
+
+  // Find current user's review
+  const userReview = user && reviews
+    ? reviews.find((r: any) => r.user_id === user.id) || null
+    : null;
 
   const hostname = safeHostname(tool.website);
 
@@ -128,7 +151,7 @@ export default async function ToolPage({
         <div className="flex flex-col md:flex-row gap-8 items-start mb-12">
           <div className="w-20 h-20 bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-white/10 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
             {tool.image_url ? (
-              <img src={tool.image_url} alt={tool.name} className="w-full h-full object-contain p-2" />
+              <Image src={tool.image_url} alt={tool.name} width={80} height={80} className="w-full h-full object-contain p-2" />
             ) : (
               <span className="text-3xl font-bold text-gray-300 dark:text-gray-600">{tool.name[0]}</span>
             )}
@@ -145,6 +168,11 @@ export default async function ToolPage({
               {tool.launch_date && (Date.now() - new Date(tool.launch_date).getTime()) < 7 * 24 * 60 * 60 * 1000 && (
                 <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full border border-emerald-100 dark:border-emerald-800">
                   ✦ New this week
+                </span>
+              )}
+              {tool.is_featured && (
+                <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-full border border-amber-100 dark:border-amber-800 flex items-center gap-1">
+                  ★ Editor's Pick
                 </span>
               )}
             </div>
@@ -169,7 +197,7 @@ export default async function ToolPage({
               {tool.description || 'No description available.'}
             </p>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 items-center">
               {tool.website && (
                 <a
                   href={tool.website}
@@ -181,6 +209,17 @@ export default async function ToolPage({
                 </a>
               )}
               <SaveButton toolId={tool.id} initialSaved={isSaved} isLoggedIn={!!user} redirectTo={`/tool/${tool.slug}`} />
+              <UpvoteButton
+                toolId={tool.id}
+                initialUpvoted={upvoteState.upvoted}
+                initialCount={upvoteState.count}
+                isLoggedIn={!!user}
+                redirectTo={`/tool/${tool.slug}`}
+              />
+            </div>
+
+            <div className="mt-4">
+              <ShareButtons url={`${baseUrl}/tool/${tool.slug}`} title={tool.name} />
             </div>
           </div>
         </div>
@@ -215,14 +254,17 @@ export default async function ToolPage({
           </p>
         </div>
 
-        {/* #6 — Related Tools */}
+        {/* Alternatives / Related Tools */}
         {relatedTools && relatedTools.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold">More {tool.main_category} Tools</h2>
+              <div>
+                <h2 className="text-lg font-bold">Alternatives to {tool.name}</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Other {tool.main_category} tools you might like</p>
+              </div>
               <Link
                 href={`/category/${categoryToSlug(tool.main_category ?? '')}`}
-                className="text-sm text-[#0066FF] hover:underline"
+                className="text-sm text-[#0066FF] hover:underline shrink-0"
               >
                 View all →
               </Link>
@@ -236,7 +278,7 @@ export default async function ToolPage({
                 >
                   <div className="w-10 h-10 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
                     {r.image_url ? (
-                      <img src={r.image_url} alt={r.name} className="w-full h-full object-contain p-1" />
+                      <Image src={r.image_url} alt={r.name} width={40} height={40} className="w-full h-full object-contain p-1" />
                     ) : (
                       <span className="text-sm font-bold text-gray-400">{r.name[0]}</span>
                     )}
@@ -251,8 +293,47 @@ export default async function ToolPage({
                 </Link>
               ))}
             </div>
+
+            {/* Compare CTA */}
+            {relatedTools.length >= 1 && (
+              <div className="mt-6 p-4 bg-blue-50 dark:bg-[#0066FF]/10 rounded-2xl border border-blue-100 dark:border-[#0066FF]/20 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Compare side by side</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">See how {tool.name} stacks up against alternatives</p>
+                </div>
+                <Link
+                  href={`/compare/${tool.slug}/${relatedTools[0].slug}`}
+                  className="inline-flex items-center gap-1.5 bg-[#0066FF] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-[#0052CC] transition-colors shrink-0"
+                >
+                  <GitCompare className="w-3.5 h-3.5" /> Compare
+                </Link>
+              </div>
+            )}
           </div>
         )}
+
+        {/* Reviews */}
+        <div className="mt-12">
+          <ReviewSection
+            toolId={tool.id}
+            toolSlug={tool.slug}
+            reviews={(reviews || []) as any}
+            userReview={userReview as any}
+            isLoggedIn={!!user}
+            avgRating={avgRating}
+          />
+        </div>
+
+        {/* Comments */}
+        <div className="mt-6">
+          <CommentSection
+            toolId={tool.id}
+            toolSlug={tool.slug}
+            comments={(comments || []) as any}
+            currentUserId={user?.id || null}
+            isLoggedIn={!!user}
+          />
+        </div>
       </main>
     </div>
   );
