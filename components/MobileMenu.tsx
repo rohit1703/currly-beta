@@ -33,12 +33,12 @@ export default function MobileMenu({ children }: MobileMenuProps) {
 
   return (
     <div className="md:hidden flex items-center">
-      <button 
+      <button
         onClick={() => setIsOpen(true)}
-        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg dark:text-gray-300 dark:hover:bg-white/10"
+        className="w-11 h-11 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-xl dark:text-gray-300 dark:hover:bg-white/10 transition-colors"
         aria-label="Open Menu"
       >
-        <Menu className="w-6 h-6" />
+        <Menu className="w-5 h-5" />
       </button>
 
       <AnimatePresence>
@@ -63,8 +63,8 @@ export default function MobileMenu({ children }: MobileMenuProps) {
             >
               <div className="flex justify-between items-center mb-8">
                 <Logo />
-                <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg">
-                  <X className="w-6 h-6 text-gray-500" />
+                <button onClick={() => setIsOpen(false)} className="w-11 h-11 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-white/10 rounded-xl transition-colors">
+                  <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
 

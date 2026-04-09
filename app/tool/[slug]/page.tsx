@@ -141,6 +141,11 @@ export default async function ToolPage({
                   🇮🇳 Made in India
                 </span>
               )}
+              {tool.launch_date && (Date.now() - new Date(tool.launch_date).getTime()) < 7 * 24 * 60 * 60 * 1000 && (
+                <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-full border border-emerald-100 dark:border-emerald-800">
+                  ✦ New this week
+                </span>
+              )}
             </div>
 
             <div className="flex flex-wrap gap-2 mb-4">

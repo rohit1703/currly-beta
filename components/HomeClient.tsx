@@ -134,9 +134,11 @@ export default function HomeClient({ tools, categories: categoriesData, totalCou
             </motion.div>
 
             {/* Headline - Responsive Text Size */}
-            <motion.h1 variants={fadeInUp} className="text-4xl md:text-7xl lg:text-8xl font-extrabold mb-6 leading-[1.1] tracking-tighter text-gray-900 dark:text-white">
-              Discover the Perfect <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0066FF] to-cyan-500">AI Tool in Seconds</span>
+            <motion.h1 variants={fadeInUp} className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-extrabold mb-6 leading-[1.1] tracking-tighter text-gray-900 dark:text-white">
+              Discover the Perfect{' '}
+              <span className="inline md:block">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0066FF] to-cyan-500">AI Tool in Seconds</span>
+              </span>
             </motion.h1>
 
             <motion.p variants={fadeInUp} className="text-lg md:text-xl text-gray-500 dark:text-gray-400 mb-8 md:mb-12 max-w-2xl mx-auto leading-relaxed font-medium px-4">

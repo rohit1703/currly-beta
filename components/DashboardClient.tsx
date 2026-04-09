@@ -13,7 +13,6 @@ import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import UserNav from '@/components/UserNav';
 import MobileMenu from '@/components/MobileMenu';
-import ToolCard from '@/components/ToolCardItem';
 import AISearchSummary from '@/components/AISearchSummary';
 import { motion, AnimatePresence } from 'framer-motion';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
@@ -272,18 +271,18 @@ export default function DashboardClient({
           </div>
 
           {/* SEARCH TABS */}
-          <div className="flex justify-center gap-6 mb-2 text-sm font-medium w-full">
-             <button 
+          <div className="flex justify-center gap-1 mb-2 text-sm font-medium w-full">
+             <button
                onClick={() => setActiveTab('search')}
-               className={`pb-3 border-b-2 transition-colors px-2 ${activeTab === 'search' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
+               className={`flex items-center gap-2 py-3 px-4 border-b-2 transition-colors min-h-[44px] ${activeTab === 'search' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
              >
-               <Search className="w-4 h-4 inline mr-2" /> Search Tools
+               <Search className="w-4 h-4 shrink-0" /> <span className="whitespace-nowrap">Search Tools</span>
              </button>
-             <button 
+             <button
                onClick={() => setActiveTab('browse')}
-               className={`pb-3 border-b-2 transition-colors px-2 ${activeTab === 'browse' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
+               className={`flex items-center gap-2 py-3 px-4 border-b-2 transition-colors min-h-[44px] ${activeTab === 'browse' ? 'border-[#0066FF] text-[#0066FF]' : 'border-transparent text-gray-500 hover:text-black dark:hover:text-white'}`}
              >
-               <LayoutGrid className="w-4 h-4 inline mr-2" /> Browse Categories
+               <LayoutGrid className="w-4 h-4 shrink-0" /> <span className="whitespace-nowrap">Browse Categories</span>
              </button>
           </div>
         </header>
@@ -382,12 +381,20 @@ export default function DashboardClient({
               )}
 
               {!isSearching && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-32">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 pb-10 md:pb-32">
                   {filteredTools.map((tool) => {
                       const logo = getLogo(tool);
                       const isSelected = compareList.find(t => t.id === tool.id);
+                      const isNew = tool.launch_date
+                        ? (Date.now() - new Date(tool.launch_date).getTime()) < 7 * 24 * 60 * 60 * 1000
+                        : false;
                       return (
-                        <div key={tool.id} className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col`}>
+                        <div key={tool.id} className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col relative`}>
+                          {isNew && (
+                            <span className="absolute top-5 left-5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white tracking-wide">
+                              NEW
+                            </span>
+                          )}
                           <div className="flex justify-between items-start mb-6">
                             <div className="w-14 h-14 bg-[#FDFBF7] dark:bg-black rounded-2xl p-2 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-inner overflow-hidden">
                               <img src={logo || `https://api.dicebear.com/7.x/initials/svg?seed=${tool.name}`} className="w-full h-full object-contain rounded-lg" onError={(e) => {e.currentTarget.style.display='none'}} />
@@ -404,7 +411,6 @@ export default function DashboardClient({
                               </span>
                             </div>
                           </div>
-                          {/* #5 — Clicking name preserves the search query in the back link */}
                           <Link
                             href={`/tool/${tool.slug}${searchQuery ? `?from=${encodeURIComponent(searchQuery)}` : ''}`}
                             className="hover:text-[#0066FF] transition-colors"
@@ -413,8 +419,8 @@ export default function DashboardClient({
                             <h3 className="font-bold text-lg md:text-xl mb-2 text-[#1A1A1A] dark:text-white hover:text-[#0066FF] transition-colors">{tool.name}</h3>
                           </Link>
                           <div className="flex items-center gap-4 text-xs text-gray-500 font-medium mb-4">
-                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 15m setup</span>
-                              {tool.is_india_based && <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded"><MapPin className="w-3 h-3" /> India</span>}
+                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 15m setup</span>
+                            {tool.is_india_based && <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded"><MapPin className="w-3 h-3" /> India</span>}
                           </div>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 line-clamp-2 leading-relaxed flex-grow">{tool.description}</p>
                           <div className="grid grid-cols-2 gap-3 mt-auto">

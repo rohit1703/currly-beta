@@ -45,13 +45,13 @@ export default function UserNav() {
       <div className="flex items-center gap-3">
         <Link
           href="/saved"
-          className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-[#0066FF] transition-colors"
+          className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-[#0066FF] transition-colors"
           title="My Stack"
         >
           <Bookmark className="w-4 h-4" /> My Stack
         </Link>
         <Link href="/profile">
-          <div className="w-9 h-9 bg-[#0066FF] rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden border border-gray-200 dark:border-white/10 shadow-sm hover:opacity-80 transition-opacity">
+          <div className="w-10 h-10 bg-[#0066FF] rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden border border-gray-200 dark:border-white/10 shadow-sm hover:opacity-80 transition-opacity">
             {user.user_metadata?.avatar_url ? (
               <img src={user.user_metadata.avatar_url} alt="User" className="w-full h-full object-cover" />
             ) : (
@@ -61,7 +61,7 @@ export default function UserNav() {
         </Link>
         <button
           onClick={handleSignOut}
-          className="text-xs font-medium text-gray-500 hover:text-red-500 transition-colors"
+          className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-colors"
           title="Sign Out"
         >
           <LogOut className="w-4 h-4" />

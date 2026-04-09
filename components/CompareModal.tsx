@@ -1,6 +1,6 @@
 'use client';
 
-import { X, ExternalLink, Check, Minus } from 'lucide-react';
+import { X, ExternalLink, Minus } from 'lucide-react';
 import Link from 'next/link';
 
 interface Tool {
@@ -20,91 +20,111 @@ interface Props {
   onClose: () => void;
 }
 
-const Row = ({ label, values }: { label: string; values: (string | null | undefined)[] }) => (
-  <tr className="border-b border-gray-100 dark:border-white/5">
-    <td className="py-3 px-4 text-xs font-bold text-gray-400 uppercase tracking-wider w-28 shrink-0">{label}</td>
-    {values.map((v, i) => (
-      <td key={i} className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-        {v || <Minus className="w-4 h-4 text-gray-300" />}
-      </td>
-    ))}
-  </tr>
-);
+const FIELDS = [
+  { label: 'Category', key: 'main_category' },
+  { label: 'Pricing', key: 'pricing_model' },
+  { label: 'Region', key: 'region' },
+];
 
 export default function CompareModal({ tools, onClose }: Props) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-4xl bg-white dark:bg-[#111] rounded-3xl shadow-2xl border border-gray-100 dark:border-white/10 overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="w-full sm:max-w-4xl bg-white dark:bg-[#111] sm:rounded-3xl shadow-2xl border-t sm:border border-gray-100 dark:border-white/10 overflow-hidden max-h-[92vh] flex flex-col rounded-t-3xl">
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-white/5">
-          <h2 className="text-lg font-bold">Compare Tools</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-white/5 shrink-0">
+          <h2 className="text-base font-bold">Compare {tools.length} tools</h2>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Tool logos + names */}
-        <div className="overflow-auto flex-1">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-100 dark:border-white/5">
-                <th className="w-28 px-4 py-4" />
-                {tools.map((tool) => (
-                  <th key={tool.id} className="px-4 py-4 text-left">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                        {tool.image_url ? (
-                          <img src={tool.image_url} alt={tool.name} className="w-full h-full object-contain p-1" />
-                        ) : (
-                          <span className="text-sm font-bold text-gray-400">{tool.name[0]}</span>
-                        )}
+        {/* Scrollable content */}
+        <div className="overflow-y-auto flex-1 px-5 py-5">
+
+          {/* Tool name cards row */}
+          <div className={`grid gap-3 mb-6 ${tools.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+            {tools.map((tool) => (
+              <div key={tool.id} className="bg-gray-50 dark:bg-white/5 rounded-2xl p-4 text-center">
+                <div className="w-10 h-10 bg-white dark:bg-black rounded-xl border border-gray-200 dark:border-white/10 flex items-center justify-center overflow-hidden mx-auto mb-2">
+                  {tool.image_url ? (
+                    <img src={tool.image_url} alt={tool.name} className="w-full h-full object-contain p-1" />
+                  ) : (
+                    <span className="text-sm font-bold text-gray-400">{tool.name[0]}</span>
+                  )}
+                </div>
+                <Link href={`/tool/${tool.slug}`} onClick={onClose} className="font-bold text-sm hover:text-[#0066FF] transition-colors line-clamp-1">
+                  {tool.name}
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          {/* Comparison rows */}
+          <div className="space-y-3">
+            {FIELDS.map(({ label, key }) => (
+              <div key={key} className="bg-gray-50 dark:bg-white/5 rounded-2xl overflow-hidden">
+                <div className="px-4 py-2 bg-gray-100 dark:bg-white/5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  {label}
+                </div>
+                <div className={`grid gap-0 divide-x divide-gray-200 dark:divide-white/5 ${tools.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                  {tools.map((tool) => {
+                    const val = key === 'region'
+                      ? (tool.is_india_based ? '🇮🇳 India' : 'Global')
+                      : (tool as any)[key];
+                    return (
+                      <div key={tool.id} className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                        {val || <Minus className="w-3.5 h-3.5 text-gray-300" />}
                       </div>
-                      <Link href={`/tool/${tool.slug}`} className="font-bold text-sm hover:text-[#0066FF] transition-colors">
-                        {tool.name}
-                      </Link>
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              <Row label="Category" values={tools.map(t => t.main_category)} />
-              <Row label="Pricing" values={tools.map(t => t.pricing_model)} />
-              <Row label="Region" values={tools.map(t => t.is_india_based ? '🇮🇳 India' : 'Global')} />
-              <tr className="border-b border-gray-100 dark:border-white/5">
-                <td className="py-3 px-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Description</td>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* Description */}
+            <div className="bg-gray-50 dark:bg-white/5 rounded-2xl overflow-hidden">
+              <div className="px-4 py-2 bg-gray-100 dark:bg-white/5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Description
+              </div>
+              <div className={`grid gap-0 divide-x divide-gray-200 dark:divide-white/5 ${tools.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                 {tools.map((tool) => (
-                  <td key={tool.id} className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 align-top">
+                  <div key={tool.id} className="px-4 py-3 text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                     {tool.description
-                      ? <span className="line-clamp-3">{tool.description}</span>
-                      : <Minus className="w-4 h-4 text-gray-300" />}
-                  </td>
+                      ? <span className="line-clamp-4">{tool.description}</span>
+                      : <Minus className="w-3.5 h-3.5 text-gray-300" />}
+                  </div>
                 ))}
-              </tr>
-              <tr>
-                <td className="py-4 px-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Website</td>
-                {tools.map((tool) => (
-                  <td key={tool.id} className="py-4 px-4">
-                    {tool.website ? (
-                      <a
-                        href={tool.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold bg-[#0066FF] text-white px-4 py-2 rounded-xl hover:bg-[#0052CC] transition-colors"
-                      >
-                        Visit <ExternalLink className="w-3 h-3" />
-                      </a>
-                    ) : (
-                      <Minus className="w-4 h-4 text-gray-300" />
-                    )}
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Visit buttons */}
+          <div className={`grid gap-3 mt-5 ${tools.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+            {tools.map((tool) => (
+              tool.website ? (
+                <a
+                  key={tool.id}
+                  href={tool.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-[#0066FF] text-white text-sm font-bold py-3 rounded-2xl hover:bg-[#0052CC] transition-colors"
+                >
+                  Visit <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              ) : (
+                <div key={tool.id} className="flex items-center justify-center py-3 rounded-2xl bg-gray-100 dark:bg-white/5 text-gray-400 text-sm">
+                  No website
+                </div>
+              )
+            ))}
+          </div>
         </div>
       </div>
     </div>
