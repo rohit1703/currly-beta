@@ -1,19 +1,6 @@
 -- Run this in Supabase Dashboard → SQL Editor
--- Required for semantic/vector search to work
+-- Fixes: "operator does not exist: extensions.vector <=> extensions.vector"
 
--- 1. Enable the pgvector extension (if not already enabled)
-create extension if not exists vector;
-
--- 2. Add the embedding column to the tools table (if it doesn't exist)
-alter table tools add column if not exists embedding vector(1536);
-
--- 3. Create an index for fast vector similarity search
-create index if not exists tools_embedding_idx
-  on tools
-  using ivfflat (embedding vector_cosine_ops)
-  with (lists = 100);
-
--- 4. Create the match_tools function used by smartSearch
 create or replace function match_tools (
   query_embedding vector(1536),
   match_threshold float,
@@ -33,6 +20,7 @@ returns table (
   similarity float
 )
 language sql stable
+set search_path = public, extensions
 as $$
   select
     id,
