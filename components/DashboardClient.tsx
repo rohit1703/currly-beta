@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Search, CheckSquare, Square, X, ArrowRight, Filter, Zap, MapPin, 
-  Clock, Loader2, Globe, Sparkles, LayoutGrid, Code, PenTool, 
-  BarChart3, MessageSquare, Edit 
+import {
+  Search, CheckSquare, Square, X, Zap, MapPin,
+  Clock, Loader2, Globe, LayoutGrid, Code, PenTool,
+  BarChart3, MessageSquare, Edit
 } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -244,6 +244,43 @@ export default function DashboardClient({
 
               </div>
 
+              {/* #4 — Active filter chips */}
+              {(indiaOnly || priceFilter.length > 0 || categoryFilter !== 'All') && !isSearching && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {categoryFilter !== 'All' && (
+                    <button
+                      onClick={() => setCategoryFilter('All')}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-[#0066FF]/10 text-[#0066FF] border border-[#0066FF]/20 hover:bg-[#0066FF]/20 transition-colors"
+                    >
+                      {categoryFilter} <X className="w-3 h-3" />
+                    </button>
+                  )}
+                  {indiaOnly && (
+                    <button
+                      onClick={() => setIndiaOnly(false)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800 hover:bg-orange-100 transition-colors"
+                    >
+                      🇮🇳 India Only <X className="w-3 h-3" />
+                    </button>
+                  )}
+                  {priceFilter.map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setPriceFilter(priceFilter.filter(x => x !== p))}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-white/10 hover:bg-gray-200 transition-colors"
+                    >
+                      {p} <X className="w-3 h-3" />
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => { setCategoryFilter('All'); setIndiaOnly(false); setPriceFilter([]); }}
+                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 px-2 py-1.5 transition-colors"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              )}
+
               {!isSearching && isFuzzy && filteredTools.length > 0 && (
                 <div className="mb-6 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 rounded-xl">
                   <Search className="w-4 h-4 shrink-0" />
@@ -284,7 +321,14 @@ export default function DashboardClient({
                               {tool.pricing_model || 'PAID'}
                             </span>
                           </div>
-                          <h3 className="font-bold text-lg md:text-xl mb-2 text-[#1A1A1A] dark:text-white">{tool.name}</h3>
+                          {/* #5 — Clicking name preserves the search query in the back link */}
+                          <Link
+                            href={`/tool/${tool.slug}${searchQuery ? `?from=${encodeURIComponent(searchQuery)}` : ''}`}
+                            className="hover:text-[#0066FF] transition-colors"
+                            onClick={() => logToolClick(tool.id, searchQuery)}
+                          >
+                            <h3 className="font-bold text-lg md:text-xl mb-2 text-[#1A1A1A] dark:text-white hover:text-[#0066FF] transition-colors">{tool.name}</h3>
+                          </Link>
                           <div className="flex items-center gap-4 text-xs text-gray-500 font-medium mb-4">
                               <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 15m setup</span>
                               {tool.is_india_based && <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded"><MapPin className="w-3 h-3" /> India</span>}

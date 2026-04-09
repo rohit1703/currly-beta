@@ -1,20 +1,24 @@
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ExternalLink, Globe, Tag, IndianRupee } from 'lucide-react';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createAdminClient();
+
+// #7 — Pre-build all Live tool pages at build time
+export async function generateStaticParams() {
+  const { data } = await supabase
+    .from('tools')
+    .select('slug')
+    .eq('launch_status', 'Live');
+  return (data || []).map((t) => ({ slug: t.slug }));
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const { data: tool } = await supabase.from('tools').select('name, description, image_url').eq('slug', slug).single();
-
   if (!tool) return { title: 'Tool Not Found' };
-
   return {
     title: `${tool.name} — AI Tool Review & Pricing | Currly`,
     description: tool.description?.substring(0, 160) || `Discover ${tool.name} on Currly — pricing, features, and alternatives.`,
@@ -31,15 +35,38 @@ function safeHostname(url?: string | null): string | null {
   try { return new URL(url).hostname; } catch { return null; }
 }
 
-export default async function ToolPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ToolPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ from?: string }>;
+}) {
   const { slug } = await params;
-  const { data: tool } = await supabase
-    .from('tools')
-    .select('id, name, slug, website, description, image_url, main_category, pricing_model, is_india_based, launch_date')
-    .eq('slug', slug)
-    .single();
+  const { from } = await searchParams;
+
+  // #5 — Preserve search: back button returns to the search that led here
+  const backHref = from ? `/dashboard?q=${encodeURIComponent(from)}` : '/dashboard';
+  const backLabel = from ? `← Back to "${from}"` : '← Back to Search';
+
+  const [{ data: tool }, ] = await Promise.all([
+    supabase
+      .from('tools')
+      .select('id, name, slug, website, description, image_url, main_category, pricing_model, is_india_based, launch_date')
+      .eq('slug', slug)
+      .single(),
+  ]);
 
   if (!tool) return notFound();
+
+  // #6 — Related tools from same category
+  const { data: relatedTools } = await supabase
+    .from('tools')
+    .select('id, name, slug, description, image_url, pricing_model')
+    .eq('main_category', tool.main_category)
+    .eq('launch_status', 'Live')
+    .neq('id', tool.id)
+    .limit(4);
 
   const hostname = safeHostname(tool.website);
 
@@ -64,16 +91,16 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
             <div className="w-8 h-8 bg-[#0066FF] rounded-lg flex items-center justify-center text-white font-bold">C</div>
             currly
           </Link>
-          <Link href="/dashboard" className="text-sm font-medium text-gray-500 hover:text-[#0066FF] transition-colors">
-            ← Back to Search
+          <Link href={backHref} className="text-sm font-medium text-gray-500 hover:text-[#0066FF] transition-colors truncate max-w-[200px]">
+            {backLabel}
           </Link>
         </div>
       </nav>
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         {/* Breadcrumb */}
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-[#0066FF] mb-8 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> All Tools
+        <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-[#0066FF] mb-8 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> {from ? `Results for "${from}"` : 'All Tools'}
         </Link>
 
         {/* Header */}
@@ -98,9 +125,12 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
 
             <div className="flex flex-wrap gap-2 mb-4">
               {tool.main_category && (
-                <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-blue-50 dark:bg-[#0066FF]/10 text-[#0066FF] border border-blue-100 dark:border-[#0066FF]/20 font-medium">
+                <Link
+                  href={`/category/${tool.main_category.toLowerCase()}`}
+                  className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-blue-50 dark:bg-[#0066FF]/10 text-[#0066FF] border border-blue-100 dark:border-[#0066FF]/20 font-medium hover:bg-blue-100 transition-colors"
+                >
                   <Tag className="w-3 h-3" /> {tool.main_category}
-                </span>
+                </Link>
               )}
               {tool.pricing_model && (
                 <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-white/10 font-medium">
@@ -124,14 +154,6 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
                   Visit Website <ExternalLink className="w-4 h-4" />
                 </a>
               )}
-              {tool.main_category && (
-                <Link
-                  href={`/category/${tool.main_category.toLowerCase()}`}
-                  className="inline-flex items-center gap-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 px-5 py-2.5 rounded-xl font-bold text-sm hover:border-[#0066FF] transition-colors"
-                >
-                  More {tool.main_category} Tools
-                </Link>
-              )}
             </div>
           </div>
         </div>
@@ -149,7 +171,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
           <div className="bg-white dark:bg-[#111] p-5 rounded-2xl border border-gray-100 dark:border-white/5">
             <div className="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Website</div>
             {hostname ? (
-              <a href={tool.website!} target="_blank" rel="noopener noreferrer" className="font-bold text-[#0066FF] hover:underline flex items-center gap-1">
+              <a href={tool.website!} target="_blank" rel="noopener noreferrer" className="font-bold text-[#0066FF] hover:underline flex items-center gap-1 text-sm">
                 <Globe className="w-4 h-4" /> {hostname}
               </a>
             ) : (
@@ -158,13 +180,52 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
           </div>
         </div>
 
-        {/* Description Block */}
-        <div className="bg-white dark:bg-[#111] p-8 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm">
+        {/* Description */}
+        <div className="bg-white dark:bg-[#111] p-8 rounded-3xl border border-gray-100 dark:border-white/5 shadow-sm mb-12">
           <h2 className="text-lg font-bold mb-4">About {tool.name}</h2>
           <p className="text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
             {tool.description || 'No detailed description available for this tool.'}
           </p>
         </div>
+
+        {/* #6 — Related Tools */}
+        {relatedTools && relatedTools.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold">More {tool.main_category} Tools</h2>
+              <Link
+                href={`/category/${tool.main_category?.toLowerCase()}`}
+                className="text-sm text-[#0066FF] hover:underline"
+              >
+                View all →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {relatedTools.map((r) => (
+                <Link
+                  key={r.id}
+                  href={`/tool/${r.slug}${from ? `?from=${encodeURIComponent(from)}` : ''}`}
+                  className="flex items-start gap-4 bg-white dark:bg-[#111] p-4 rounded-2xl border border-gray-100 dark:border-white/5 hover:border-[#0066FF]/40 transition-colors group"
+                >
+                  <div className="w-10 h-10 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
+                    {r.image_url ? (
+                      <img src={r.image_url} alt={r.name} className="w-full h-full object-contain p-1" />
+                    ) : (
+                      <span className="text-sm font-bold text-gray-400">{r.name[0]}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-semibold text-sm group-hover:text-[#0066FF] transition-colors truncate">{r.name}</h3>
+                      <span className="text-xs text-gray-400 shrink-0">{r.pricing_model}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">{r.description}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
