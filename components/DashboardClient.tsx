@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import ToolLogo from '@/components/ToolLogo';
 import {
   Search, CheckSquare, Square, X, MapPin,
   Clock, Loader2, LayoutGrid, ExternalLink, Star,
@@ -393,15 +393,7 @@ export default function DashboardClient({
 
                           <div className="flex justify-between items-start mb-6 relative z-10">
                             <div className="w-14 h-14 bg-[#FDFBF7] dark:bg-black rounded-2xl p-2 flex items-center justify-center border border-gray-100 dark:border-white/5 shadow-inner overflow-hidden">
-                              <Image
-                                src={logo || `https://api.dicebear.com/7.x/initials/svg?seed=${tool.name}`}
-                                alt={tool.name}
-                                width={56}
-                                height={56}
-                                className="w-full h-full object-contain rounded-lg"
-                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                                unoptimized={!logo}
-                              />
+                              <ToolLogo src={logo} name={tool.name} size={56} className="w-full h-full object-contain rounded-lg" />
                             </div>
                             <div className="flex items-center gap-2">
                               <SaveButton

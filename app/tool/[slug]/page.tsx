@@ -3,8 +3,8 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { Metadata } from 'next';
 import Link from 'next/link';
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
+import ToolLogo from '@/components/ToolLogo';
 import { ArrowLeft, ExternalLink, Globe, Tag, IndianRupee, GitCompare } from 'lucide-react';
 import SaveButton from '@/components/SaveButton';
 import ShareButtons from '@/components/ShareButtons';
@@ -150,11 +150,7 @@ export default async function ToolPage({
         {/* Header */}
         <div className="flex flex-col md:flex-row gap-8 items-start mb-12">
           <div className="w-20 h-20 bg-white dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-white/10 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
-            {tool.image_url ? (
-              <Image src={tool.image_url} alt={tool.name} width={80} height={80} className="w-full h-full object-contain p-2" />
-            ) : (
-              <span className="text-3xl font-bold text-gray-300 dark:text-gray-600">{tool.name[0]}</span>
-            )}
+            <ToolLogo src={tool.image_url} name={tool.name} size={80} className="w-full h-full object-contain p-2" />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -277,11 +273,7 @@ export default async function ToolPage({
                   className="flex items-start gap-4 bg-white dark:bg-[#111] p-4 rounded-2xl border border-gray-100 dark:border-white/5 hover:border-[#0066FF]/40 transition-colors group"
                 >
                   <div className="w-10 h-10 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10 flex items-center justify-center shrink-0 overflow-hidden">
-                    {r.image_url ? (
-                      <Image src={r.image_url} alt={r.name} width={40} height={40} className="w-full h-full object-contain p-1" />
-                    ) : (
-                      <span className="text-sm font-bold text-gray-400">{r.name[0]}</span>
-                    )}
+                    <ToolLogo src={r.image_url} name={r.name} size={40} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
