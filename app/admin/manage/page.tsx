@@ -2,6 +2,7 @@ import { createAdminClient } from '@/utils/supabase/admin';
 import Link from 'next/link';
 import { deleteTool } from './actions';
 import DeleteButton from '@/components/admin/DeleteButton';
+import BackfillLogosButton from '@/components/admin/BackfillLogosButton';
 
 export default async function ManageTools({
   searchParams,
@@ -33,9 +34,12 @@ export default async function ManageTools({
           <h1 className="text-2xl font-bold mb-1">Manage Tools</h1>
           <p className="text-gray-400 text-sm">{count?.toLocaleString()} tools total</p>
         </div>
-        <Link href="/admin/manage/new" className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors">
-          + Add Tool
-        </Link>
+        <div className="flex items-center gap-3">
+          <BackfillLogosButton secret={process.env.ADMIN_SECRET || ''} />
+          <Link href="/admin/manage/new" className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors">
+            + Add Tool
+          </Link>
+        </div>
       </div>
 
       {/* Search */}

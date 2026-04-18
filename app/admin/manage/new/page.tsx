@@ -6,15 +6,22 @@ const PRICING = ['Free', 'Freemium', 'Paid', 'Free (Teams $15/seat/mo)', 'API-ba
 export default async function NewTool({
   searchParams,
 }: {
-  searchParams: Promise<{ prefill?: string }>;
+  searchParams: Promise<{ prefill?: string; error?: string }>;
 }) {
   const params = await searchParams;
   const prefill = params.prefill || '';
+  const error = params.error || '';
 
   return (
     <div className="p-8 max-w-2xl">
       <h1 className="text-2xl font-bold mb-1">Add New Tool</h1>
       <p className="text-gray-400 text-sm mb-8">Fill in the details to add a tool to Currly</p>
+
+      {error && (
+        <div className="mb-6 px-4 py-3 bg-red-900/30 border border-red-700/50 rounded-xl text-sm text-red-300">
+          {error}
+        </div>
+      )}
 
       <form action={createTool} className="space-y-5">
         <div className="grid grid-cols-2 gap-5">
@@ -37,8 +44,10 @@ export default async function NewTool({
         </div>
 
         <div>
-          <label className="block text-xs text-gray-400 mb-1.5">Image URL</label>
-          <input name="image_url" type="url" placeholder="https://..."
+          <label className="block text-xs text-gray-400 mb-1.5">
+            Image URL <span className="text-gray-600 font-normal">(leave blank to auto-fetch from website)</span>
+          </label>
+          <input name="image_url" type="url" placeholder="https://... or leave blank for auto logo"
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-[#0066FF]" />
         </div>
 

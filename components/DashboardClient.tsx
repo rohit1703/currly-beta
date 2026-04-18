@@ -123,13 +123,12 @@ export default function DashboardClient({
 
   // --- HELPERS ---
   const getLogo = (tool: any) => {
-    if (tool.logo_url) return tool.logo_url;
-    if (tool.website_url) {
+    if (tool.image_url) return tool.image_url;
+    if (tool.website) {
       try {
-        let url = tool.website_url;
-        if (!url.startsWith('http')) url = `https://${url}`;
+        const url = tool.website.startsWith('http') ? tool.website : `https://${tool.website}`;
         return `https://logo.clearbit.com/${new URL(url).hostname}`;
-      } catch (e) { return null; }
+      } catch { return null; }
     }
     return null;
   };

@@ -10,7 +10,16 @@ export type ImportRow = {
   main_category?: string;
   pricing_model?: string;
   is_india_based?: boolean;
+  image_url?: string;
 };
+
+function clearbitLogo(website: string | null | undefined): string | null {
+  if (!website) return null;
+  try {
+    const url = website.startsWith('http') ? website : `https://${website}`;
+    return `https://logo.clearbit.com/${new URL(url).hostname}`;
+  } catch { return null; }
+}
 
 export type ImportResult = {
   imported: number;
@@ -53,14 +62,16 @@ export async function importTools(rows: ImportRow[]): Promise<ImportResult> {
       continue;
     }
 
+    const website = row.website?.trim() || null;
     toInsert.push({
       name: row.name.trim(),
       slug: toSlug(row.name.trim()),
-      website: row.website?.trim() || null,
+      website,
       description: row.description?.trim() || null,
       main_category: row.main_category?.trim() || 'Other',
       pricing_model: row.pricing_model?.trim() || 'Free',
       is_india_based: row.is_india_based ?? false,
+      image_url: row.image_url?.trim() || clearbitLogo(website) || undefined,
       launch_status: 'Live',
       launch_date: new Date().toISOString(),
     });

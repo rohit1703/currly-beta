@@ -1,13 +1,21 @@
 import { createAdminClient } from '@/utils/supabase/admin';
 import { updateTool, deleteTool } from '../actions';
 import { notFound } from 'next/navigation';
+import Image from 'next/image';
 import DeleteButton from '@/components/admin/DeleteButton';
 
 const CATEGORIES = ['Coding', 'Design', 'Writing', 'Marketing', 'Productivity', 'Video', 'Audio', 'Image', 'Data', 'Finance', 'HR', 'Legal', 'Sales', 'Support', 'Other'];
 const PRICING = ['Free', 'Freemium', 'Paid', 'Free (Teams $15/seat/mo)', 'API-based', 'SaaS', 'Open Source'];
 
-export default async function EditTool({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditTool({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { id } = await params;
+  const { error } = await searchParams;
   const supabase = createAdminClient();
 
   const { data: tool } = await supabase
@@ -33,6 +41,12 @@ export default async function EditTool({ params }: { params: Promise<{ id: strin
       </div>
       <p className="text-gray-400 text-sm mb-8">/{tool.slug}</p>
 
+      {error && (
+        <div className="mb-6 px-4 py-3 bg-red-900/30 border border-red-700/50 rounded-xl text-sm text-red-300">
+          {error}
+        </div>
+      )}
+
       <form action={update} className="space-y-5">
         <div className="grid grid-cols-2 gap-5">
           <div>
@@ -54,10 +68,12 @@ export default async function EditTool({ params }: { params: Promise<{ id: strin
         </div>
 
         <div>
-          <label className="block text-xs text-gray-400 mb-1.5">Image URL</label>
-          <div className="flex gap-3">
+          <label className="block text-xs text-gray-400 mb-1.5">
+            Image URL <span className="text-gray-600 font-normal">(leave blank to auto-fetch from website)</span>
+          </label>
+          <div className="flex gap-3 items-center">
             {tool.image_url && (
-              <img src={tool.image_url} className="w-10 h-10 rounded-lg object-cover border border-white/10" />
+              <Image src={tool.image_url} alt={tool.name} width={40} height={40} className="w-10 h-10 rounded-lg object-contain border border-white/10 bg-white/5 shrink-0" />
             )}
             <input name="image_url" type="url" defaultValue={tool.image_url}
               className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-[#0066FF]" />
