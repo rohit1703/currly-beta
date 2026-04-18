@@ -122,16 +122,7 @@ export default function DashboardClient({
   });
 
   // --- HELPERS ---
-  const getLogo = (tool: any) => {
-    if (tool.image_url) return tool.image_url;
-    if (tool.website) {
-      try {
-        const url = tool.website.startsWith('http') ? tool.website : `https://${tool.website}`;
-        return `https://logo.clearbit.com/${new URL(url).hostname}`;
-      } catch { return null; }
-    }
-    return null;
-  };
+  const getLogo = (tool: any) => tool.image_url || null;
 
   const toggleCompare = (tool: any) => {
     if (compareList.find(t => t.id === tool.id)) {

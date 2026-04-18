@@ -8,19 +8,11 @@ function toSlug(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-function clearbitLogo(website: string | null): string | null {
-  if (!website) return null;
-  try {
-    const url = website.startsWith('http') ? website : `https://${website}`;
-    return `https://logo.clearbit.com/${new URL(url).hostname}`;
-  } catch { return null; }
-}
-
 export async function createTool(formData: FormData) {
   const supabase = createAdminClient();
   const name = (formData.get('name') as string)?.trim();
   const website = (formData.get('website') as string)?.trim() || null;
-  const imageUrl = (formData.get('image_url') as string)?.trim() || clearbitLogo(website);
+  const imageUrl = (formData.get('image_url') as string)?.trim() || null;
 
   const { error } = await supabase.from('tools').insert({
     name,
@@ -51,7 +43,7 @@ export async function updateTool(id: string, formData: FormData) {
   const supabase = createAdminClient();
   const name = (formData.get('name') as string)?.trim();
   const website = (formData.get('website') as string)?.trim() || null;
-  const imageUrl = (formData.get('image_url') as string)?.trim() || clearbitLogo(website);
+  const imageUrl = (formData.get('image_url') as string)?.trim() || null;
 
   const { error } = await supabase.from('tools').update({
     name,

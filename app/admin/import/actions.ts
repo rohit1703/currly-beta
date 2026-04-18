@@ -13,13 +13,6 @@ export type ImportRow = {
   image_url?: string;
 };
 
-function clearbitLogo(website: string | null | undefined): string | null {
-  if (!website) return null;
-  try {
-    const url = website.startsWith('http') ? website : `https://${website}`;
-    return `https://logo.clearbit.com/${new URL(url).hostname}`;
-  } catch { return null; }
-}
 
 export type ImportResult = {
   imported: number;
@@ -71,7 +64,7 @@ export async function importTools(rows: ImportRow[]): Promise<ImportResult> {
       main_category: row.main_category?.trim() || 'Other',
       pricing_model: row.pricing_model?.trim() || 'Free',
       is_india_based: row.is_india_based ?? false,
-      image_url: row.image_url?.trim() || clearbitLogo(website) || undefined,
+      image_url: row.image_url?.trim() || undefined,
       launch_status: 'Live',
       launch_date: new Date().toISOString(),
     });
