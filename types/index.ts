@@ -25,3 +25,16 @@ export interface Category {
   icon?: any;
   count?: string;
 }
+
+export interface UserProfile {
+  id: string;
+  user_id: string;
+  role: string;
+  company_stage: string;
+  team_size: string;
+  region: string;
+  monthly_budget_range: string;
+  primary_use_case: string;
+  created_at: string;
+  updated_at: string;
+}

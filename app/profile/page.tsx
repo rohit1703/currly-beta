@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Bookmark, Calendar, ExternalLink, ChevronRight, Download, Trash2, Shield } from 'lucide-react';
+import { Bookmark, Calendar, ExternalLink, ChevronRight, Download, Trash2, Shield, User } from 'lucide-react';
 import ProfileActions from '@/components/ProfileActions';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -24,19 +24,26 @@ export default async function ProfilePage() {
 
   const adminSupabase = createAdminClient();
 
-  // Fetch saved tools (up to 6 for preview) + total count
-  const { data: savedItems, count: savedCount } = await adminSupabase
-    .from('saved_tools')
-    .select(`
-      id,
-      created_at,
-      tools (
-        id, name, slug, website, image_url, main_category, pricing_model
-      )
-    `, { count: 'exact' })
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(6);
+  // Fetch ICP profile + saved tools in parallel
+  const [{ data: userProfile }, { data: savedItems, count: savedCount }] = await Promise.all([
+    adminSupabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    adminSupabase
+      .from('saved_tools')
+      .select(`
+        id,
+        created_at,
+        tools (
+          id, name, slug, website, image_url, main_category, pricing_model
+        )
+      `, { count: 'exact' })
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(6),
+  ]);
 
   const recentTools = ((savedItems || []).map((item: any) => item.tools).filter(Boolean)) as any[];
 
@@ -165,6 +172,46 @@ export default async function ProfilePage() {
             <ChevronRight className="w-4 h-4 text-gray-400" />
           </Link>
           <SignOutButton />
+        </div>
+
+        {/* ICP Profile */}
+        <div className="bg-white dark:bg-[#111] rounded-3xl border border-gray-100 dark:border-white/5 p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-gray-400" />
+              <h2 className="font-bold text-base">My Profile</h2>
+            </div>
+            <Link
+              href="/onboarding"
+              className="text-xs font-semibold text-[#0066FF] hover:underline"
+            >
+              {userProfile ? 'Edit' : 'Complete profile →'}
+            </Link>
+          </div>
+
+          {userProfile ? (
+            <div className="flex flex-wrap gap-2">
+              {[
+                userProfile.role,
+                userProfile.company_stage,
+                userProfile.team_size + ' person' + (userProfile.team_size === '1' ? '' : 's'),
+                userProfile.region,
+                userProfile.monthly_budget_range + '/mo',
+                userProfile.primary_use_case,
+              ].map((val) => (
+                <span
+                  key={val}
+                  className="px-3 py-1 rounded-full text-xs font-medium bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-gray-700 dark:text-gray-300"
+                >
+                  {val}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">
+              Complete your profile so we can surface the right tools for your stage and goals.
+            </p>
+          )}
         </div>
 
         {/* Data & Privacy */}
