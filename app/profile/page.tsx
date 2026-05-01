@@ -3,7 +3,8 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Bookmark, Calendar, ExternalLink, ChevronRight } from 'lucide-react';
+import { Bookmark, Calendar, ExternalLink, ChevronRight, Download, Trash2, Shield } from 'lucide-react';
+import ProfileActions from '@/components/ProfileActions';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import UserNav from '@/components/UserNav';
@@ -164,6 +165,19 @@ export default async function ProfilePage() {
             <ChevronRight className="w-4 h-4 text-gray-400" />
           </Link>
           <SignOutButton />
+        </div>
+
+        {/* Data & Privacy */}
+        <div className="bg-white dark:bg-[#111] rounded-3xl border border-gray-100 dark:border-white/5 p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <Shield className="w-4 h-4 text-gray-400" />
+            <h2 className="font-bold text-base">Data &amp; Privacy</h2>
+          </div>
+          <ProfileActions />
+          <p className="text-xs text-gray-400 mt-4">
+            Search queries are stored anonymously and cannot be linked to your account.{' '}
+            <Link href="/privacy" className="text-[#0066FF] hover:underline">Privacy Policy</Link>
+          </p>
         </div>
 
       </main>

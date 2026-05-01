@@ -34,13 +34,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Protect /admin — only rohitagentx@gmail.com can access
+  // Protect /admin — access controlled via ADMIN_EMAILS env var (comma-separated)
   if (request.nextUrl.pathname.startsWith('/admin')) {
-    // Always allow /admin/login through
     if (request.nextUrl.pathname === '/admin/login') {
       return supabaseResponse
     }
-    if (!user || user.email !== 'rohitagentx@gmail.com') {
+    const adminEmails = (process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (!user || !adminEmails.includes((user.email || '').toLowerCase())) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
   }

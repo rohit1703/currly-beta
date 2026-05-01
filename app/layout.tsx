@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { CSPostHogProvider } from '@/components/posthog-provider';
 import PostHogPageView from '@/components/PostHogPageView';
+import CookieConsent from '@/components/CookieConsent';
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -60,6 +61,7 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               {children}
+              <CookieConsent />
           </ThemeProvider>
         </body>
       </CSPostHogProvider>
