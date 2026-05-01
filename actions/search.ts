@@ -29,63 +29,64 @@ function extractKeywords(query: string): string {
 const COLUMNS = 'id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date, is_featured';
 
 // --- 1. FAST SEARCH (Text Only - Instant & Cached) ---
-// We use createPublicClient here because unstable_cache cannot access request cookies.
+// Defined at module level so unstable_cache persists across requests.
+// Defining it inside the function body creates a new wrapper every call — cache never hits.
+const getCachedTextSearch = unstable_cache(
+  async (q: string): Promise<{ tools: Tool[]; fuzzy: boolean }> => {
+    const supabase = createPublicClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const keywords = extractKeywords(q);
+
+    // Step 1: Try FTS with extracted keywords
+    if (keywords) {
+      const { data: ftsData } = await supabase
+        .from('tools')
+        .select(COLUMNS)
+        .textSearch('fts', keywords, { type: 'websearch', config: 'english' })
+        .limit(20);
+
+      if (ftsData && ftsData.length > 0) return { tools: ftsData as Tool[], fuzzy: false };
+    }
+
+    // Step 2: FTS returned nothing — fall back to broad ilike search
+    const terms = (keywords || q).split(/\s+/).filter(Boolean);
+    const primaryTerm = terms[0];
+    if (!primaryTerm) return { tools: [], fuzzy: false };
+
+    const { data: fallbackData } = await supabase
+      .from('tools')
+      .select(COLUMNS)
+      .or(terms.map(t => `name.ilike.%${t}%,description.ilike.%${t}%`).join(','))
+      .limit(20);
+
+    if (fallbackData && fallbackData.length > 0) {
+      return { tools: fallbackData as Tool[], fuzzy: false };
+    }
+
+    // Step 3: Nothing matched — try trigram fuzzy search (catches typos)
+    const { data: fuzzyData } = await supabase
+      .rpc('fuzzy_search_tools', { search_query: q, match_count: 20 });
+
+    return { tools: (fuzzyData as Tool[]) || [], fuzzy: (fuzzyData?.length ?? 0) > 0 };
+  },
+  ['text-search'],
+  { revalidate: 3600, tags: ['tools'] }
+);
+
 export async function quickSearch(query: string): Promise<{ tools: Tool[]; fuzzy: boolean }> {
   if (!query) return { tools: [], fuzzy: false };
 
-  // Rate limit: 30 searches per minute per IP
+  // Rate limit: 30 searches per minute per IP (must stay here to access request headers)
   const headersList = await headers();
   const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   if (!rateLimit(`search:${ip}`, 30, 60_000)) {
     return { tools: [], fuzzy: false };
   }
 
-  const getCachedText = unstable_cache(
-    async (q: string): Promise<{ tools: Tool[]; fuzzy: boolean }> => {
-      const supabase = createPublicClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
-      const keywords = extractKeywords(q);
-
-      // Step 1: Try FTS with extracted keywords
-      if (keywords) {
-        const { data: ftsData } = await supabase
-          .from('tools')
-          .select(COLUMNS)
-          .textSearch('fts', keywords, { type: 'websearch', config: 'english' })
-          .limit(20);
-
-        if (ftsData && ftsData.length > 0) return { tools: ftsData as Tool[], fuzzy: false };
-      }
-
-      // Step 2: FTS returned nothing — fall back to broad ilike search
-      const terms = (keywords || q).split(/\s+/).filter(Boolean);
-      const primaryTerm = terms[0];
-      if (!primaryTerm) return { tools: [], fuzzy: false };
-
-      const { data: fallbackData } = await supabase
-        .from('tools')
-        .select(COLUMNS)
-        .or(terms.map(t => `name.ilike.%${t}%,description.ilike.%${t}%`).join(','))
-        .limit(20);
-
-      if (fallbackData && fallbackData.length > 0) {
-        return { tools: fallbackData as Tool[], fuzzy: false };
-      }
-
-      // Step 3: Nothing matched — try trigram fuzzy search (catches typos)
-      const { data: fuzzyData } = await supabase
-        .rpc('fuzzy_search_tools', { search_query: q, match_count: 20 });
-
-      return { tools: (fuzzyData as Tool[]) || [], fuzzy: (fuzzyData?.length ?? 0) > 0 };
-    },
-    ['text-search'],
-    { revalidate: 3600, tags: ['tools'] }
-  );
-
-  return getCachedText(query);
+  return getCachedTextSearch(query);
 }
 
 // Cached embedding fetch — same query never hits OpenAI twice within 24h

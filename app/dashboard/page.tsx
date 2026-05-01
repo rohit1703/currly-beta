@@ -3,6 +3,7 @@ import { quickSearch, getLatestTools, getToolsByCategory } from '@/actions/searc
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
+import { CATEGORIES } from '@/lib/categories';
 
 export default async function Dashboard({
   searchParams,
@@ -32,15 +33,15 @@ export default async function Dashboard({
   const tools = 'tools' in searchResult ? searchResult.tools : searchResult;
   const isFuzzy = 'fuzzy' in searchResult ? searchResult.fuzzy : false;
 
-  // Build category list with counts
+  // Build category list with counts — only canonical categories, always exactly 12
+  const canonicalNames = new Set(CATEGORIES.map(c => c.name));
   const catMap: Record<string, number> = {};
   for (const row of categoryRows || []) {
     const c = row.main_category;
-    if (c) catMap[c] = (catMap[c] || 0) + 1;
+    if (c && canonicalNames.has(c)) catMap[c] = (catMap[c] || 0) + 1;
   }
-  const allCategories = Object.entries(catMap)
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([name, count]) => ({ name, count }));
+  const allCategories = CATEGORIES.map(c => ({ name: c.name, count: catMap[c.name] || 0 }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   // Fetch saved tool IDs for this user
   let savedToolIds: string[] = [];

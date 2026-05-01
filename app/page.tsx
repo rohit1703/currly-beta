@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/utils/supabase/admin';
 import HomeClient from '@/components/HomeClient';
-import { categoryToSlug } from '@/lib/categories';
+import { CATEGORIES, categoryToSlug } from '@/lib/categories';
 
 export default async function Home() {
   const supabase = createAdminClient();
@@ -18,14 +18,20 @@ export default async function Home() {
       .eq('launch_status', 'Live'),
   ]);
 
+  // Count tools per canonical category only — ignore any non-canonical DB values
+  const canonicalNames = new Set(CATEGORIES.map(c => c.name));
   const categoryMap: Record<string, number> = {};
   for (const row of categoryRows || []) {
     const cat = row.main_category;
-    if (cat) categoryMap[cat] = (categoryMap[cat] || 0) + 1;
+    if (cat && canonicalNames.has(cat)) categoryMap[cat] = (categoryMap[cat] || 0) + 1;
   }
-  const categories = Object.entries(categoryMap)
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, count]) => ({ name, count, slug: categoryToSlug(name) }));
+
+  // Always show all 12 canonical categories (even if count is 0), sorted by count desc
+  const categories = CATEGORIES.map(c => ({
+    name: c.name,
+    count: categoryMap[c.name] || 0,
+    slug: categoryToSlug(c.name),
+  })).sort((a, b) => b.count - a.count);
 
   return <HomeClient tools={tools || []} categories={categories} totalCount={totalCount || 0} />;
 }
