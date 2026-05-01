@@ -18,6 +18,7 @@ interface Tool {
 interface Props {
   tools: Tool[];
   onClose: () => void;
+  searchQuery?: string;
 }
 
 const FIELDS = [
@@ -26,7 +27,7 @@ const FIELDS = [
   { label: 'Region', key: 'region' },
 ];
 
-export default function CompareModal({ tools, onClose }: Props) {
+export default function CompareModal({ tools, onClose, searchQuery }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm"
@@ -59,7 +60,7 @@ export default function CompareModal({ tools, onClose }: Props) {
                     <span className="text-sm font-bold text-gray-400">{tool.name[0]}</span>
                   )}
                 </div>
-                <Link href={`/tool/${tool.slug}`} onClick={onClose} className="font-bold text-sm hover:text-[#0066FF] transition-colors line-clamp-1">
+                <Link href={`/tool/${tool.slug}${searchQuery ? `?from=${encodeURIComponent(searchQuery)}` : ''}`} onClick={onClose} className="font-bold text-sm hover:text-[#0066FF] transition-colors line-clamp-1">
                   {tool.name}
                 </Link>
               </div>

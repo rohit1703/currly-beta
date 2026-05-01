@@ -481,7 +481,7 @@ export default function DashboardClient({
           )}
 
           {isCompareOpen && compareList.length > 0 && (
-            <CompareModal tools={compareList} onClose={() => setIsCompareOpen(false)} />
+            <CompareModal tools={compareList} onClose={() => setIsCompareOpen(false)} searchQuery={searchQuery} />
           )}
         </div>
       </main>
