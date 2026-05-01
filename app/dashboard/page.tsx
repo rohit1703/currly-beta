@@ -1,5 +1,5 @@
 import DashboardClient from '@/components/DashboardClient';
-import { quickSearch, getLatestTools } from '@/actions/search';
+import { quickSearch, getLatestTools, getToolsByCategory } from '@/actions/search';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
@@ -7,16 +7,21 @@ import { cookies } from 'next/headers';
 export default async function Dashboard({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; category?: string }>;
 }) {
   const params = await searchParams;
   const query = params.q || '';
+  const category = params.category || '';
 
   const supabase = createAdminClient();
   const userSupabase = createClient(await cookies());
 
   const [searchResult, { data: categoryRows, count: totalCount }, { data: { user } }] = await Promise.all([
-    query ? quickSearch(query) : getLatestTools(50).then(tools => ({ tools, fuzzy: false })),
+    category
+      ? getToolsByCategory(category).then(tools => ({ tools, fuzzy: false }))
+      : query
+      ? quickSearch(query)
+      : getLatestTools(50).then(tools => ({ tools, fuzzy: false })),
     supabase
       .from('tools')
       .select('main_category', { count: 'exact' })
@@ -56,6 +61,7 @@ export default async function Dashboard({
       totalCount={totalCount || 0}
       isLoggedIn={!!user}
       savedToolIds={savedToolIds}
+      initialCategory={category}
     />
   );
 }

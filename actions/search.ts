@@ -235,6 +235,20 @@ export async function searchTools(query: string): Promise<Tool[]> {
   return smartSearch(query);
 }
 
+export async function getToolsByCategory(category: string): Promise<Tool[]> {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(cookieStore);
+
+  const { data } = await supabase
+    .from('tools')
+    .select(COLUMNS)
+    .eq('main_category', category)
+    .eq('launch_status', 'Live')
+    .order('name')
+    .limit(200);
+  return (data as Tool[]) || [];
+}
+
 export async function getLatestTools(limit: number = 50): Promise<Tool[]> {
   const cookieStore = await cookies();
   const supabase = createServerClient(cookieStore);

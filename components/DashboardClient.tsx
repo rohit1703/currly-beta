@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ToolLogo from '@/components/ToolLogo';
 import {
   Search, CheckSquare, Square, X, MapPin,
@@ -28,6 +29,7 @@ export default function DashboardClient({
   totalCount = 0,
   isLoggedIn = false,
   savedToolIds = [],
+  initialCategory = '',
 }: {
   initialTools: any[];
   searchQuery: string;
@@ -36,15 +38,17 @@ export default function DashboardClient({
   totalCount?: number;
   isLoggedIn?: boolean;
   savedToolIds?: string[];
+  initialCategory?: string;
 }) {
+  const router = useRouter();
   // --- STATE ---
-  // Semantic search results come from the server — no client-side upgrade needed
   const [tools, setTools] = useState(initialTools);
 
   // FILTER STATE
   const [indiaOnly, setIndiaOnly] = useState(false);
   const [priceFilter, setPriceFilter] = useState<string[]>([]);
-  const [categoryFilter, setCategoryFilter] = useState('All');
+  // initialCategory comes from ?category= URL param (server-side filter already applied)
+  const [categoryFilter, setCategoryFilter] = useState(initialCategory || 'All');
 
   // INTERACTION STATE
   const [compareList, setCompareList] = useState<any[]>([]);
@@ -56,6 +60,11 @@ export default function DashboardClient({
   const [hasMore, setHasMore] = useState(initialTools.length >= 50);
   const [isLoadingMore, startLoadMore] = useTransition();
 
+  // Ref to block semantic search re-render while user is hovering a card
+  const hoveringRef = useRef(false);
+  // Ref to the sidebar category scroll container for auto-scroll on selection
+  const categoryListRef = useRef<HTMLDivElement>(null);
+
   // Sync tools when server sends new results (e.g. after navigation)
   useEffect(() => {
     setTools(initialTools);
@@ -63,17 +72,16 @@ export default function DashboardClient({
   }, [initialTools]);
 
   // Silent semantic upgrade — runs after page renders with fast text results.
-  // Swaps in ranked semantic results only if user hasn't scrolled away.
+  // Swaps in ranked semantic results only if user hasn't scrolled or hovered a card.
   useEffect(() => {
     if (!searchQuery) return;
     let cancelled = false;
 
     smartSearch(searchQuery).then(semanticResults => {
       if (cancelled || semanticResults.length === 0) return;
-      // Don't disrupt the user if they've already scrolled down
-      if (window.scrollY > 300) return;
+      // Don't disrupt the user if they've scrolled down or are hovering a card
+      if (window.scrollY > 300 || hoveringRef.current) return;
 
-      // Merge: semantic first (ranked), then text-only extras
       setTools(prev => {
         const seenIds = new Set(semanticResults.map((t: any) => t.id));
         const textOnly = prev.filter((t: any) => !seenIds.has(t.id));
@@ -95,6 +103,22 @@ export default function DashboardClient({
     setIsSearching(true);
     // Let the native form GET action proceed so Enter and click both work
   };
+
+  // Navigate to /dashboard?category=X so the server fetches the full category set
+  const selectCategory = useCallback((name: string) => {
+    if (name === 'All') {
+      router.push('/dashboard');
+    } else {
+      router.push(`/dashboard?category=${encodeURIComponent(name)}`);
+    }
+  }, [router]);
+
+  // Scroll the sidebar category list so the selected item is visible
+  const scrollCategoryIntoView = useCallback((name: string) => {
+    if (!categoryListRef.current) return;
+    const item = categoryListRef.current.querySelector(`[data-cat="${CSS.escape(name)}"]`);
+    if (item) (item as HTMLElement).scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, []);
 
   // --- FILTERING ---
   // Client-side filtering (Applied to the CURRENT tools state)
@@ -155,7 +179,7 @@ export default function DashboardClient({
           {filteredTools.length.toLocaleString()} <span className="text-sm font-normal text-gray-400">of {totalCount.toLocaleString()}</span>
         </div>
         {(indiaOnly || priceFilter.length > 0 || categoryFilter !== 'All') && (
-          <button onClick={() => { setCategoryFilter('All'); setIndiaOnly(false); setPriceFilter([]); }}
+          <button onClick={() => { selectCategory('All'); setIndiaOnly(false); setPriceFilter([]); }}
             className="text-xs text-[#0066FF] hover:underline mt-1">Clear filters</button>
         )}
       </div>
@@ -163,9 +187,10 @@ export default function DashboardClient({
       {/* Category */}
       <div>
         <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">Category</div>
-        <div className="space-y-0.5 max-h-52 overflow-y-auto pr-1">
+        <div ref={categoryListRef} className="space-y-0.5 max-h-52 overflow-y-auto pr-1">
           <div
-            onClick={() => setCategoryFilter('All')}
+            data-cat="All"
+            onClick={() => selectCategory('All')}
             className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-sm transition-colors ${categoryFilter === 'All' ? 'bg-[#0066FF] text-white' : 'hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300'}`}
           >
             <span className="font-medium">All categories</span>
@@ -174,7 +199,11 @@ export default function DashboardClient({
           {allCategories.map(cat => (
             <div
               key={cat.name}
-              onClick={() => setCategoryFilter(cat.name === categoryFilter ? 'All' : cat.name)}
+              data-cat={cat.name}
+              onClick={() => {
+                selectCategory(cat.name === categoryFilter ? 'All' : cat.name);
+                scrollCategoryIntoView(cat.name);
+              }}
               className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-sm transition-colors ${categoryFilter === cat.name ? 'bg-[#0066FF] text-white' : 'hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300'}`}
             >
               <span className="truncate">{cat.name}</span>
@@ -302,7 +331,7 @@ export default function DashboardClient({
                 <div className="flex flex-wrap gap-2 mb-4">
                   {categoryFilter !== 'All' && (
                     <button
-                      onClick={() => setCategoryFilter('All')}
+                      onClick={() => selectCategory('All')}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-[#0066FF]/10 text-[#0066FF] border border-[#0066FF]/20 hover:bg-[#0066FF]/20 transition-colors"
                     >
                       {categoryFilter} <X className="w-3 h-3" />
@@ -326,7 +355,7 @@ export default function DashboardClient({
                     </button>
                   ))}
                   <button
-                    onClick={() => { setCategoryFilter('All'); setIndiaOnly(false); setPriceFilter([]); }}
+                    onClick={() => { selectCategory('All'); setIndiaOnly(false); setPriceFilter([]); }}
                     className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 px-2 py-1.5 transition-colors"
                   >
                     Clear all
@@ -369,7 +398,11 @@ export default function DashboardClient({
                         : false;
                       const isFeatured = !!tool.is_featured;
                       return (
-                        <div key={tool.id} className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col relative cursor-pointer`}>
+                        <div
+                          key={tool.id}
+                          onPointerEnter={() => { hoveringRef.current = true; }}
+                          onPointerLeave={() => { hoveringRef.current = false; }}
+                          className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col relative cursor-pointer`}>
                           {/* Stretched link — covers whole card */}
                           <Link
                             href={`/tool/${tool.slug}${searchQuery ? `?from=${encodeURIComponent(searchQuery)}` : ''}`}
@@ -449,10 +482,7 @@ export default function DashboardClient({
                     return (
                       <button
                         key={cat.name}
-                        onClick={() => {
-                          setCategoryFilter(cat.name);
-                          setActiveTab('search');
-                        }}
+                        onClick={() => router.push(`/category/${categoryToSlug(cat.name)}`)}
                         className="flex flex-col items-center justify-center p-6 rounded-[2rem] bg-white dark:bg-[#111] border border-gray-200 dark:border-white/10 hover:border-[#0066FF] hover:shadow-lg transition-all group text-center"
                       >
                         <div className="w-12 h-12 bg-blue-50 dark:bg-white/5 rounded-2xl flex items-center justify-center text-[#0066FF] mb-3 group-hover:scale-110 transition-transform shrink-0">
