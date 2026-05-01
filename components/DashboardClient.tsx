@@ -400,16 +400,13 @@ export default function DashboardClient({
                       return (
                         <div
                           key={tool.id}
+                          onClick={() => {
+                            logToolClick(tool.id, searchQuery);
+                            router.push(`/tool/${tool.slug}${searchQuery ? `?from=${encodeURIComponent(searchQuery)}` : ''}`);
+                          }}
                           onPointerEnter={() => { hoveringRef.current = true; }}
                           onPointerLeave={() => { hoveringRef.current = false; }}
                           className={`group bg-white dark:bg-[#111] border ${isSelected ? 'border-[#0066FF] ring-1 ring-[#0066FF]' : 'border-gray-100 dark:border-white/5'} rounded-[2rem] p-6 md:p-8 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1 flex flex-col relative cursor-pointer`}>
-                          {/* Stretched link — covers whole card */}
-                          <Link
-                            href={`/tool/${tool.slug}${searchQuery ? `?from=${encodeURIComponent(searchQuery)}` : ''}`}
-                            className="absolute inset-0 rounded-[2rem]"
-                            onClick={() => logToolClick(tool.id, searchQuery)}
-                            aria-label={tool.name}
-                          />
 
                           <div className="absolute top-5 left-5 flex gap-1.5 z-10">
                             {isNew && (
@@ -429,12 +426,15 @@ export default function DashboardClient({
                               <ToolLogo src={logo} name={tool.name} size={56} className="w-full h-full object-contain rounded-lg" />
                             </div>
                             <div className="flex items-center gap-2">
-                              <SaveButton
-                                toolId={tool.id}
-                                initialSaved={savedToolIds.includes(tool.id)}
-                                isLoggedIn={isLoggedIn}
-                                compact
-                              />
+                              {/* stopPropagation so saving doesn't trigger card navigation */}
+                              <div onClick={(e) => e.stopPropagation()}>
+                                <SaveButton
+                                  toolId={tool.id}
+                                  initialSaved={savedToolIds.includes(tool.id)}
+                                  isLoggedIn={isLoggedIn}
+                                  compact
+                                />
+                              </div>
                               <span className={`text-[10px] font-bold px-3 py-1 rounded-full border tracking-wide ${tool.pricing_model?.toLowerCase().includes('free') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/5 text-gray-500'}`}>
                                 {tool.pricing_model || 'PAID'}
                               </span>
@@ -448,7 +448,7 @@ export default function DashboardClient({
                           </div>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-8 line-clamp-2 leading-relaxed flex-grow relative z-10">{tool.description}</p>
                           <div className="grid grid-cols-2 gap-3 mt-auto relative z-10">
-                            <button onClick={(e) => { e.preventDefault(); toggleCompare(tool); }} className="bg-white dark:bg-black hover:bg-gray-50 border border-gray-200 dark:border-white/20 text-xs font-bold py-3 rounded-xl transition-colors text-[#1A1A1A] dark:text-white">Compare</button>
+                            <button onClick={(e) => { e.stopPropagation(); toggleCompare(tool); }} className="bg-white dark:bg-black hover:bg-gray-50 border border-gray-200 dark:border-white/20 text-xs font-bold py-3 rounded-xl transition-colors text-[#1A1A1A] dark:text-white">Compare</button>
                             <a href={tool.website || '#'} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.stopPropagation(); logToolClick(tool.id, searchQuery); }} className="bg-[#0066FF] hover:bg-[#0052CC] text-white text-xs font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-500/20">Visit <ExternalLink className="w-3 h-3" /></a>
                           </div>
                         </div>
