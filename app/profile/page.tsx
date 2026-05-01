@@ -198,9 +198,9 @@ export default async function ProfilePage() {
                 userProfile.region,
                 userProfile.monthly_budget_range + '/mo',
                 userProfile.primary_use_case,
-              ].map((val) => (
+              ].map((val, i) => (
                 <span
-                  key={val}
+                  key={i}
                   className="px-3 py-1 rounded-full text-xs font-medium bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 text-gray-700 dark:text-gray-300"
                 >
                   {val}

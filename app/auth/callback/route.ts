@@ -23,9 +23,11 @@ export async function GET(request: Request) {
         .eq('user_id', session.user.id)
         .maybeSingle();
 
+      // Avoid redirecting to /onboarding as the post-onboarding destination
+      const finalNext = next.startsWith('/onboarding') ? '/dashboard' : next;
       const destination = profile
         ? next
-        : `/onboarding?next=${encodeURIComponent(next)}`;
+        : `/onboarding?next=${encodeURIComponent(finalNext)}`;
 
       return NextResponse.redirect(`${origin}${destination}`);
     }

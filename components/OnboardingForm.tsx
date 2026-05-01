@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { usePostHog } from 'posthog-js/react';
 import {
   ROLES,
@@ -54,12 +54,12 @@ const FIELD_OPTIONS: Record<keyof FormState, readonly string[]> = {
 
 interface Props {
   initialProfile?: UserProfile | null;
+  next?: string;
 }
 
-export default function OnboardingForm({ initialProfile }: Props) {
+export default function OnboardingForm({ initialProfile, next: nextProp }: Props) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const nextParam = searchParams.get('next') || '/dashboard';
+  const nextParam = nextProp || '/dashboard';
   const posthog = usePostHog();
 
   const [step, setStep] = useState(0);

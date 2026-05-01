@@ -60,7 +60,7 @@ export default async function OnboardingPage({
             </p>
           </div>
 
-          <OnboardingForm initialProfile={profile as UserProfile | null} />
+          <OnboardingForm initialProfile={profile as UserProfile | null} next={next} />
         </div>
       </main>
     </div>

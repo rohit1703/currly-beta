@@ -1,6 +1,6 @@
 -- =================================================================
 -- Currly: ICP / Use-case Profile
--- Run once in Supabase SQL Editor.
+-- Idempotent — safe to run multiple times.
 -- =================================================================
 
 CREATE TABLE IF NOT EXISTS public.user_profiles (
@@ -26,6 +26,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_user_profiles_updated_at ON public.user_profiles;
 CREATE TRIGGER trg_user_profiles_updated_at
   BEFORE UPDATE ON public.user_profiles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -33,14 +34,17 @@ CREATE TRIGGER trg_user_profiles_updated_at
 -- RLS
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "users_select_own_profile" ON public.user_profiles;
 CREATE POLICY "users_select_own_profile"
   ON public.user_profiles FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "users_insert_own_profile" ON public.user_profiles;
 CREATE POLICY "users_insert_own_profile"
   ON public.user_profiles FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "users_update_own_profile" ON public.user_profiles;
 CREATE POLICY "users_update_own_profile"
   ON public.user_profiles FOR UPDATE
   USING (auth.uid() = user_id)

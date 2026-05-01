@@ -3,6 +3,7 @@ import { createAdminClient } from '@/utils/supabase/admin';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { UserProfileSchema } from '@/lib/onboarding-schema';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET() {
   const userSupabase = createClient(await cookies());
@@ -28,6 +29,10 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  if (!rateLimit(`profile:${user.id}`, 10, 60_000)) {
+    return NextResponse.json({ success: false, message: 'Too many requests. Please wait a moment.' }, { status: 429 });
   }
 
   let body: unknown;
