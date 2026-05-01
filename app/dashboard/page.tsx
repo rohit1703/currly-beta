@@ -34,7 +34,7 @@ export default async function Dashboard({
     if (c) catMap[c] = (catMap[c] || 0) + 1;
   }
   const allCategories = Object.entries(catMap)
-    .sort((a, b) => b[1] - a[1])
+    .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([name, count]) => ({ name, count }));
 
   // Fetch saved tool IDs for this user
