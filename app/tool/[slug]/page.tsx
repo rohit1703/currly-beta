@@ -57,9 +57,6 @@ export default async function ToolPage({
   const { slug } = await params;
   const { from } = await searchParams;
 
-  const backHref = from ? `/dashboard?q=${encodeURIComponent(from)}` : '/dashboard';
-  const backLabel = from ? `← Back to "${from}"` : '← Back to Search';
-
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://currly-beta.vercel.app';
 
   // Get user session + tool data in parallel
@@ -74,6 +71,12 @@ export default async function ToolPage({
   ]);
 
   if (!tool) return notFound();
+
+  // Unauthenticated users can't reach /dashboard (proxy blocks it) — send them home instead
+  const backHref = user
+    ? (from ? `/dashboard?q=${encodeURIComponent(from)}` : '/dashboard')
+    : '/';
+  const backLabel = from ? `← Back to "${from}"` : (user ? '← Back to Search' : '← Home');
 
   // Get saved state + upvote state + related tools + reviews + comments in parallel
   const [savedResult, upvoteState, { data: relatedTools }, { data: reviews }, { data: comments }] = await Promise.all([
