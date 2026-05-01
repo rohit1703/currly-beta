@@ -15,16 +15,17 @@ import MobileMenu from '@/components/MobileMenu';
 import AISearchSummary from '@/components/AISearchSummary';
 import { motion, AnimatePresence } from 'framer-motion';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
-import { smartSearch, logToolClick, loadMoreTools } from '@/actions/search';
+import { logToolClick, loadMoreTools } from '@/actions/search';
 import CompareModal from '@/components/CompareModal';
 import SaveButton from '@/components/SaveButton';
 import { getCategoryIcon, categoryToSlug } from '@/lib/categories';
+import type { SearchIntent } from '@/actions/ai-search';
 
 
 export default function DashboardClient({
   initialTools,
   searchQuery,
-  isFuzzy = false,
+  searchIntent = null,
   allCategories = [],
   totalCount = 0,
   isLoggedIn = false,
@@ -33,7 +34,7 @@ export default function DashboardClient({
 }: {
   initialTools: any[];
   searchQuery: string;
-  isFuzzy?: boolean;
+  searchIntent?: SearchIntent | null;
   allCategories?: { name: string; count: number }[];
   totalCount?: number;
   isLoggedIn?: boolean;
@@ -60,7 +61,7 @@ export default function DashboardClient({
   const [hasMore, setHasMore] = useState(initialTools.length >= 50);
   const [isLoadingMore, startLoadMore] = useTransition();
 
-  // Ref to block semantic search re-render while user is hovering a card
+  // Ref to block re-renders while user is hovering a card
   const hoveringRef = useRef(false);
   // Ref to the sidebar category scroll container for auto-scroll on selection
   const categoryListRef = useRef<HTMLDivElement>(null);
@@ -70,29 +71,6 @@ export default function DashboardClient({
     setTools(initialTools);
     setIsSearching(false);
   }, [initialTools]);
-
-  // Silent semantic upgrade — only runs when text search returned poor results
-  // (fuzzy/typo match or fewer than 5 hits). Skips the OpenAI call entirely
-  // when FTS already found good matches, which is the common case.
-  useEffect(() => {
-    if (!searchQuery) return;
-    if (!isFuzzy && initialTools.length >= 5) return;
-    let cancelled = false;
-
-    smartSearch(searchQuery).then(semanticResults => {
-      if (cancelled || semanticResults.length === 0) return;
-      // Don't disrupt the user if they've scrolled down or are hovering a card
-      if (window.scrollY > 300 || hoveringRef.current) return;
-
-      setTools(prev => {
-        const seenIds = new Set(semanticResults.map((t: any) => t.id));
-        const textOnly = prev.filter((t: any) => !seenIds.has(t.id));
-        return [...semanticResults, ...textOnly];
-      });
-    });
-
-    return () => { cancelled = true; };
-  }, [searchQuery]);
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     const form = e.currentTarget;
@@ -365,10 +343,20 @@ export default function DashboardClient({
                 </div>
               )}
 
-              {!isSearching && isFuzzy && filteredTools.length > 0 && (
-                <div className="mb-6 flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 rounded-xl">
-                  <Search className="w-4 h-4 shrink-0" />
-                  No exact matches — showing approximate results for <span className="font-semibold ml-1">"{searchQuery}"</span>
+              {!isSearching && searchQuery && searchIntent?.summary && (
+                <div className="mb-5 flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-gray-400">Interpreted as:</span>
+                  <span className="font-medium text-[#0066FF]">{searchIntent.summary}</span>
+                  {searchIntent.category && (
+                    <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-[#0066FF] rounded-full text-xs font-medium border border-blue-100 dark:border-blue-800">
+                      {searchIntent.category}
+                    </span>
+                  )}
+                  {searchIntent.pricing?.map(p => (
+                    <span key={p} className="px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-xs font-medium border border-green-100 dark:border-green-800 capitalize">
+                      {p}
+                    </span>
+                  ))}
                 </div>
               )}
 

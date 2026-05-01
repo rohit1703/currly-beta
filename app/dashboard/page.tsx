@@ -1,5 +1,6 @@
 import DashboardClient from '@/components/DashboardClient';
-import { quickSearch, getLatestTools, getToolsByCategory } from '@/actions/search';
+import { getLatestTools, getToolsByCategory } from '@/actions/search';
+import { aiSearch } from '@/actions/ai-search';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
@@ -19,10 +20,10 @@ export default async function Dashboard({
 
   const [searchResult, { data: categoryRows, count: totalCount }, { data: { user } }] = await Promise.all([
     category
-      ? getToolsByCategory(category).then(tools => ({ tools, fuzzy: false }))
+      ? getToolsByCategory(category).then(tools => ({ tools, intent: null }))
       : query
-      ? quickSearch(query)
-      : getLatestTools(50).then(tools => ({ tools, fuzzy: false })),
+      ? aiSearch(query)
+      : getLatestTools(50).then(tools => ({ tools, intent: null })),
     supabase
       .from('tools')
       .select('main_category', { count: 'exact' })
@@ -30,10 +31,10 @@ export default async function Dashboard({
     userSupabase.auth.getUser(),
   ]);
 
-  const tools = 'tools' in searchResult ? searchResult.tools : searchResult;
-  const isFuzzy = 'fuzzy' in searchResult ? searchResult.fuzzy : false;
+  const tools = searchResult.tools;
+  const searchIntent = 'intent' in searchResult ? searchResult.intent : null;
 
-  // Build category list with counts — only canonical categories, always exactly 12
+  // Build category list — only the 12 canonical categories with live counts
   const canonicalNames = new Set(CATEGORIES.map(c => c.name));
   const catMap: Record<string, number> = {};
   for (const row of categoryRows || []) {
@@ -57,7 +58,7 @@ export default async function Dashboard({
     <DashboardClient
       initialTools={tools}
       searchQuery={query}
-      isFuzzy={isFuzzy}
+      searchIntent={searchIntent}
       allCategories={allCategories}
       totalCount={totalCount || 0}
       isLoggedIn={!!user}

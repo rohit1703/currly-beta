@@ -59,6 +59,16 @@ export default function SearchAutocomplete({
     setRecentSearches(getRecent());
   }, []);
 
+  // Reset navigating state when page is restored from bfcache (browser Back button).
+  // Without this, the submit button stays disabled after returning from a search.
+  useEffect(() => {
+    const handler = (e: PageTransitionEvent) => {
+      if (e.persisted) setNavigating(false);
+    };
+    window.addEventListener('pageshow', handler);
+    return () => window.removeEventListener('pageshow', handler);
+  }, []);
+
   // Debounced suggestion fetch
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
