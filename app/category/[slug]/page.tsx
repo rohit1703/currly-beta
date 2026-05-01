@@ -9,39 +9,18 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import UserNav from '@/components/UserNav';
 import { Logo } from '@/components/Logo';
 import SaveButton from '@/components/SaveButton';
-import { slugToIlikePattern, getCategoryIcon } from '@/lib/categories';
+import { CATEGORIES, categoryToSlug, slugToCategory, getCategoryIcon } from '@/lib/categories';
 import type { Metadata } from 'next';
 
 const supabase = createAdminClient();
 
 export async function generateStaticParams() {
-  const { data } = await supabase
-    .from('tools')
-    .select('main_category')
-    .eq('launch_status', 'Live');
-
-  const { categoryToSlug } = await import('@/lib/categories');
-  const seen = new Set<string>();
-  const params: { slug: string }[] = [];
-  for (const row of data || []) {
-    if (!row.main_category) continue;
-    const s = categoryToSlug(row.main_category);
-    if (!seen.has(s)) { seen.add(s); params.push({ slug: s }); }
-  }
-  return params;
+  return CATEGORIES.map(cat => ({ slug: categoryToSlug(cat.name) }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const pattern = slugToIlikePattern(slug);
-  const { data } = await supabase
-    .from('tools')
-    .select('main_category')
-    .ilike('main_category', pattern)
-    .limit(1)
-    .single();
-
-  const categoryName = data?.main_category || slug.replace(/-/g, ' ');
+  const categoryName = slugToCategory(slug) || slug.replace(/-/g, ' ');
   return {
     title: `Best ${categoryName} AI Tools (2025) | Currly`,
     description: `Discover top-rated AI tools for ${categoryName}. Curated, tested, and reviewed by experts on Currly.`,
@@ -50,7 +29,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const pattern = slugToIlikePattern(slug);
+  const categoryName = slugToCategory(slug);
+  if (!categoryName) return notFound();
 
   const userSupabase = createClient(await cookies());
   const [{ data: { user } }, { data: tools }] = await Promise.all([
@@ -58,13 +38,10 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     supabase
       .from('tools')
       .select('id, name, slug, description, image_url, main_category, pricing_model, website, is_india_based')
-      .ilike('main_category', pattern)
+      .eq('main_category', categoryName)
       .eq('launch_status', 'Live')
       .order('launch_date', { ascending: false }),
   ]);
-
-  // Derive the human-readable name from the first result
-  const categoryName = tools?.[0]?.main_category || slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
   if (!tools || tools.length === 0) return notFound();
 
