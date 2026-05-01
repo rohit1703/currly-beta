@@ -45,6 +45,7 @@ const getCachedTextSearch = unstable_cache(
       const { data: ftsData } = await supabase
         .from('tools')
         .select(COLUMNS)
+        .eq('launch_status', 'Live')
         .textSearch('fts', keywords, { type: 'websearch', config: 'english' })
         .limit(20);
 
@@ -59,6 +60,7 @@ const getCachedTextSearch = unstable_cache(
     const { data: fallbackData } = await supabase
       .from('tools')
       .select(COLUMNS)
+      .eq('launch_status', 'Live')
       .or(terms.map(t => `name.ilike.%${t}%,description.ilike.%${t}%`).join(','))
       .limit(20);
 

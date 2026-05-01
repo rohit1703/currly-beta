@@ -71,10 +71,12 @@ export default function DashboardClient({
     setIsSearching(false);
   }, [initialTools]);
 
-  // Silent semantic upgrade — runs after page renders with fast text results.
-  // Swaps in ranked semantic results only if user hasn't scrolled or hovered a card.
+  // Silent semantic upgrade — only runs when text search returned poor results
+  // (fuzzy/typo match or fewer than 5 hits). Skips the OpenAI call entirely
+  // when FTS already found good matches, which is the common case.
   useEffect(() => {
     if (!searchQuery) return;
+    if (!isFuzzy && initialTools.length >= 5) return;
     let cancelled = false;
 
     smartSearch(searchQuery).then(semanticResults => {
