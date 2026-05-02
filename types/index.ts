@@ -26,6 +26,18 @@ export interface Category {
   count?: string;
 }
 
+export interface Collection {
+  id: string;
+  user_id: string;
+  name: string;
+  description?: string | null;
+  share_token?: string | null;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+  tool_count?: number;
+}
+
 export interface UserProfile {
   id: string;
   user_id: string;

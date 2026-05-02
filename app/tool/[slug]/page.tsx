@@ -78,11 +78,11 @@ export default async function ToolPage({
     : '/';
   const backLabel = from ? `← Back to "${from}"` : (user ? '← Back to Search' : '← Home');
 
-  // Get saved state + upvote state + related tools + reviews + comments in parallel
-  const [savedResult, upvoteState, { data: relatedTools }, { data: reviews }, { data: comments }] = await Promise.all([
+  // Get collections + upvote state + related tools + reviews + comments in parallel
+  const [{ data: collectionsData }, upvoteState, { data: relatedTools }, { data: reviews }, { data: comments }] = await Promise.all([
     user
-      ? userSupabase.from('saved_tools').select('id').eq('user_id', user.id).eq('tool_id', tool.id).maybeSingle()
-      : Promise.resolve({ data: null }),
+      ? supabase.from('collections').select('id, name').eq('user_id', user.id).order('created_at', { ascending: true })
+      : Promise.resolve({ data: [] }),
     getUpvoteState(tool.id),
     supabase
       .from('tools')
@@ -103,7 +103,17 @@ export default async function ToolPage({
       .order('created_at', { ascending: false }),
   ]);
 
-  const isSaved = !!savedResult.data;
+  const userCollections = (collectionsData || []).map((c: any) => ({ id: c.id, name: c.name }));
+  let toolCollectionIds: string[] = [];
+  if (user && userCollections.length > 0) {
+    const { data: ctRows } = await supabase
+      .from('collection_tools')
+      .select('collection_id')
+      .eq('tool_id', tool.id)
+      .in('collection_id', userCollections.map((c: any) => c.id));
+    toolCollectionIds = (ctRows || []).map((r: any) => r.collection_id);
+  }
+  const isSaved = toolCollectionIds.length > 0;
 
   // Compute average rating
   const avgRating = reviews && reviews.length > 0
@@ -207,7 +217,14 @@ export default async function ToolPage({
                   Visit Website <ExternalLink className="w-4 h-4" />
                 </a>
               )}
-              <SaveButton toolId={tool.id} initialSaved={isSaved} isLoggedIn={!!user} redirectTo={`/tool/${tool.slug}`} />
+              <SaveButton
+                toolId={tool.id}
+                initialSaved={isSaved}
+                isLoggedIn={!!user}
+                redirectTo={`/tool/${tool.slug}`}
+                userCollections={user ? userCollections : undefined}
+                toolCollectionIds={user ? toolCollectionIds : undefined}
+              />
               <UpvoteButton
                 toolId={tool.id}
                 initialUpvoted={upvoteState.upvoted}

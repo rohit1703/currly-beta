@@ -14,7 +14,9 @@ export async function DELETE() {
   const admin = createAdminClient();
 
   // Delete all user-attributed data before removing the auth record
+  // collections cascade-deletes collection_tools automatically
   await Promise.all([
+    admin.from('collections').delete().eq('user_id', user.id),
     admin.from('saved_tools').delete().eq('user_id', user.id),
     admin.from('api_usage').delete().eq('user_id', user.id),
   ]);

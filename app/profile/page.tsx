@@ -24,36 +24,40 @@ export default async function ProfilePage() {
 
   const adminSupabase = createAdminClient();
 
-  // Fetch ICP profile + saved tools in parallel
-  const [{ data: userProfile }, { data: savedItems, count: savedCount }] = await Promise.all([
+  // Fetch ICP profile + oldest collection's tools in parallel
+  const [{ data: userProfile }, { data: myStack }] = await Promise.all([
+    adminSupabase.from('user_profiles').select('*').eq('user_id', user.id).maybeSingle(),
     adminSupabase
-      .from('user_profiles')
-      .select('*')
+      .from('collections')
+      .select('id')
       .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
+      .limit(1)
       .maybeSingle(),
-    adminSupabase
-      .from('saved_tools')
-      .select(`
-        id,
-        created_at,
-        tools (
-          id, name, slug, website, image_url, main_category, pricing_model
-        )
-      `, { count: 'exact' })
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(6),
   ]);
 
-  const recentTools = ((savedItems || []).map((item: any) => item.tools).filter(Boolean)) as any[];
+  let savedItems: any[] = [];
+  let savedCount = 0;
+  if (myStack) {
+    const { data: ctRows, count } = await adminSupabase
+      .from('collection_tools')
+      .select('added_at, tools(id, name, slug, website, image_url, main_category, pricing_model)', { count: 'exact' })
+      .eq('collection_id', myStack.id)
+      .order('added_at', { ascending: false })
+      .limit(6);
+    savedItems = ctRows || [];
+    savedCount = count || 0;
+  }
+
+  const recentTools = savedItems.map((item: any) => item.tools).filter(Boolean) as any[];
 
   const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   const memberSince = new Date(user.created_at).toLocaleDateString('en-IN', {
     month: 'long',
     year: 'numeric',
   });
-  const lastSaved = savedItems?.[0]?.created_at
-    ? new Date(savedItems[0].created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  const lastSaved = savedItems?.[0]?.added_at
+    ? new Date(savedItems[0].added_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
     : '—';
 
   return (

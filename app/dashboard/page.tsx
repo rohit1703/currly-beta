@@ -44,14 +44,25 @@ export default async function Dashboard({
   const allCategories = CATEGORIES.map(c => ({ name: c.name, count: catMap[c.name] || 0 }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Fetch saved tool IDs for this user
-  let savedToolIds: string[] = [];
+  // Fetch collections + saved tool map for this user
+  let userCollections: { id: string; name: string }[] = [];
+  let savedToolMap: Record<string, string[]> = {};
   if (user) {
-    const { data: saved } = await userSupabase
-      .from('saved_tools')
-      .select('tool_id')
-      .eq('user_id', user.id);
-    savedToolIds = (saved || []).map((s: any) => s.tool_id);
+    const { data: cols } = await supabase
+      .from('collections')
+      .select('id, name')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+    userCollections = (cols || []).map((c: any) => ({ id: c.id, name: c.name }));
+    if (userCollections.length > 0) {
+      const { data: ctRows } = await supabase
+        .from('collection_tools')
+        .select('tool_id, collection_id')
+        .in('collection_id', userCollections.map(c => c.id));
+      for (const row of ctRows || []) {
+        (savedToolMap[(row as any).tool_id] ??= []).push((row as any).collection_id);
+      }
+    }
   }
 
   return (
@@ -62,7 +73,8 @@ export default async function Dashboard({
       allCategories={allCategories}
       totalCount={totalCount || 0}
       isLoggedIn={!!user}
-      savedToolIds={savedToolIds}
+      userCollections={userCollections}
+      savedToolMap={savedToolMap}
       initialCategory={category}
     />
   );

@@ -3,51 +3,40 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Bookmark, ExternalLink, BookmarkX } from 'lucide-react';
+import { Bookmark, Globe, Lock, Plus } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import UserNav from '@/components/UserNav';
-import SaveButton from '@/components/SaveButton';
+import NewCollectionForm from './_components/NewCollectionForm';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'My Stack | Currly',
-  description: 'Your saved AI tools on Currly.',
+  title: 'My Collections | Currly',
   robots: { index: false },
 };
 
 export default async function SavedPage() {
   const userSupabase = createClient(await cookies());
   const { data: { user } } = await userSupabase.auth.getUser();
-
   if (!user) redirect('/login?redirectTo=/saved');
 
-  const adminSupabase = createAdminClient();
-  const { data: savedItems } = await adminSupabase
-    .from('saved_tools')
-    .select(`
-      id,
-      created_at,
-      tools (
-        id, name, slug, website, description, image_url,
-        main_category, pricing_model, is_india_based
-      )
-    `)
+  const admin = createAdminClient();
+  const { data: collections } = await admin
+    .from('collections')
+    .select('id, name, description, is_public, share_token, created_at, collection_tools(count)')
     .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: true });
 
-  const tools = ((savedItems || []).map((item: any) => item.tools).filter(Boolean)) as any[];
-
-  const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'You';
+  const cols = (collections || []).map((c: any) => ({
+    ...c,
+    tool_count: c.collection_tools?.[0]?.count ?? 0,
+  }));
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] dark:bg-[#050505] text-[#1A1A1A] dark:text-white font-sans">
-      {/* Nav */}
       <nav className="w-full border-b border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-black/80 backdrop-blur-md px-6 py-4 sticky top-0 z-20">
         <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <Link href="/">
-            <Logo />
-          </Link>
+          <Link href="/"><Logo /></Link>
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <UserNav />
@@ -56,40 +45,24 @@ export default async function SavedPage() {
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-[#0066FF] rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/20 overflow-hidden shrink-0">
-              {user.user_metadata?.avatar_url ? (
-                <img src={user.user_metadata.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-              ) : (
-                displayName[0].toUpperCase()
-              )}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">{displayName}'s Stack</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {tools.length} {tools.length === 1 ? 'tool' : 'tools'} saved
-              </p>
-            </div>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold">My Collections</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {cols.length} {cols.length === 1 ? 'collection' : 'collections'}
+            </p>
           </div>
-          <Link
-            href="/dashboard"
-            className="text-sm font-semibold text-[#0066FF] hover:underline shrink-0"
-          >
-            + Discover more tools
-          </Link>
+          <NewCollectionForm />
         </div>
 
-        {/* Tools grid */}
-        {tools.length === 0 ? (
+        {cols.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <div className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mb-4">
-              <BookmarkX className="w-7 h-7 text-gray-400" />
+              <Bookmark className="w-7 h-7 text-gray-400" />
             </div>
-            <h3 className="text-lg font-bold mb-2">Nothing saved yet</h3>
+            <h3 className="text-lg font-bold mb-2">No collections yet</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-6">
-              Hit "Save to Stack" on any tool to build your personal AI toolkit.
+              Create a collection to organise your AI tools — like &quot;My sales stack&quot; or &quot;Design tools.&quot;
             </p>
             <Link
               href="/dashboard"
@@ -100,66 +73,48 @@ export default async function SavedPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {tools.map((tool) => (
-              <div
-                key={tool.id}
+            {cols.map((col: any, i: number) => (
+              <Link
+                key={col.id}
+                href={`/saved/${col.id}`}
                 className="group bg-white dark:bg-[#111] border border-gray-100 dark:border-white/5 rounded-[2rem] p-6 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-300 flex flex-col"
               >
-                {/* Logo + pricing */}
+                {/* Icon + badges */}
                 <div className="flex items-start justify-between mb-5">
-                  <div className="w-12 h-12 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-white/10 flex items-center justify-center overflow-hidden shrink-0">
-                    {tool.image_url ? (
-                      <img src={tool.image_url} alt={tool.name} className="w-full h-full object-contain p-1" />
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-bold shrink-0 shadow-lg ${i === 0 ? 'bg-[#0066FF] shadow-blue-500/20' : 'bg-gray-200 dark:bg-white/10'}`}>
+                    {i === 0 ? '★' : col.name[0].toUpperCase()}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {col.is_public ? (
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-200">
+                        <Globe className="w-3 h-3" /> Public
+                      </span>
                     ) : (
-                      <span className="text-lg font-bold text-gray-400">{tool.name[0]}</span>
+                      <span className="flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-gray-50 dark:bg-white/5 text-gray-500 border border-gray-100 dark:border-white/10">
+                        <Lock className="w-3 h-3" /> Private
+                      </span>
                     )}
                   </div>
-                  <span className={`text-[10px] font-bold px-3 py-1 rounded-full border tracking-wide ${tool.pricing_model?.toLowerCase().includes('free') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/5 text-gray-500'}`}>
-                    {tool.pricing_model || 'Paid'}
-                  </span>
                 </div>
 
-                {/* Name + category */}
-                <Link href={`/tool/${tool.slug}`} className="hover:text-[#0066FF] transition-colors">
-                  <h3 className="font-bold text-lg mb-1 group-hover:text-[#0066FF] transition-colors">
-                    {tool.name}
-                  </h3>
-                </Link>
-                {tool.main_category && (
-                  <span className="text-xs text-[#0066FF] font-medium mb-3">{tool.main_category}</span>
+                <h3 className="font-bold text-lg mb-1 group-hover:text-[#0066FF] transition-colors">
+                  {col.name}
+                </h3>
+                {col.description && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
+                    {col.description}
+                  </p>
                 )}
-
-                {/* Description */}
-                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed flex-grow mb-5">
-                  {tool.description || `AI tool in the ${tool.main_category || 'AI'} space.`}
+                <p className="text-sm text-gray-400 mt-auto pt-3 border-t border-gray-100 dark:border-white/5">
+                  {col.tool_count} {col.tool_count === 1 ? 'tool' : 'tools'}
                 </p>
-
-                {/* Actions */}
-                <div className="flex gap-2 mt-auto">
-                  <Link
-                    href={`/tool/${tool.slug}`}
-                    className="flex-1 text-center bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-xs font-bold py-2.5 rounded-xl hover:border-[#0066FF] transition-colors"
-                  >
-                    Details
-                  </Link>
-                  {tool.website ? (
-                    <a
-                      href={tool.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 text-center bg-[#0066FF] text-white text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-[#0052CC] transition-colors"
-                    >
-                      Visit <ExternalLink className="w-3 h-3" />
-                    </a>
-                  ) : null}
-                </div>
-
-                {/* Unsave */}
-                <div className="mt-3">
-                  <SaveButton toolId={tool.id} initialSaved={true} isLoggedIn={true} />
-                </div>
-              </div>
+              </Link>
             ))}
+
+            {/* Add new collection card */}
+            <div className="border-2 border-dashed border-gray-200 dark:border-white/10 rounded-[2rem] p-6 flex flex-col items-center justify-center text-center hover:border-[#0066FF] transition-colors cursor-pointer group">
+              <NewCollectionForm asCard />
+            </div>
           </div>
         )}
       </main>

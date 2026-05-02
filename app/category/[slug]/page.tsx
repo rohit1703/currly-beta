@@ -45,14 +45,25 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
   if (!tools || tools.length === 0) return notFound();
 
-  // Saved tool IDs
-  let savedToolIds: string[] = [];
+  // Collections + saved tool map
+  let userCollections: { id: string; name: string }[] = [];
+  let savedToolMap: Record<string, string[]> = {};
   if (user) {
-    const { data: saved } = await userSupabase
-      .from('saved_tools')
-      .select('tool_id')
-      .eq('user_id', user.id);
-    savedToolIds = (saved || []).map((s: any) => s.tool_id);
+    const { data: cols } = await supabase
+      .from('collections')
+      .select('id, name')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+    userCollections = (cols || []).map((c: any) => ({ id: c.id, name: c.name }));
+    if (userCollections.length > 0) {
+      const { data: ctRows } = await supabase
+        .from('collection_tools')
+        .select('tool_id, collection_id')
+        .in('collection_id', userCollections.map(c => c.id));
+      for (const row of ctRows || []) {
+        (savedToolMap[(row as any).tool_id] ??= []).push((row as any).collection_id);
+      }
+    }
   }
 
   const Icon = getCategoryIcon(categoryName);
@@ -106,9 +117,11 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
                 <div className="flex items-center gap-2">
                   <SaveButton
                     toolId={tool.id}
-                    initialSaved={savedToolIds.includes(tool.id)}
+                    initialSaved={(savedToolMap[tool.id]?.length ?? 0) > 0}
                     isLoggedIn={!!user}
                     redirectTo={`/tool/${tool.slug}`}
+                    userCollections={user ? userCollections : undefined}
+                    toolCollectionIds={user ? (savedToolMap[tool.id] ?? []) : undefined}
                     compact
                   />
                   <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border tracking-wide ${tool.pricing_model?.toLowerCase().includes('free') ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 dark:bg-white/10 border-gray-200 dark:border-white/5 text-gray-500'}`}>

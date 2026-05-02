@@ -29,7 +29,8 @@ export default function DashboardClient({
   allCategories = [],
   totalCount = 0,
   isLoggedIn = false,
-  savedToolIds = [],
+  userCollections = [],
+  savedToolMap = {},
   initialCategory = '',
 }: {
   initialTools: any[];
@@ -38,7 +39,8 @@ export default function DashboardClient({
   allCategories?: { name: string; count: number }[];
   totalCount?: number;
   isLoggedIn?: boolean;
-  savedToolIds?: string[];
+  userCollections?: { id: string; name: string }[];
+  savedToolMap?: Record<string, string[]>;
   initialCategory?: string;
 }) {
   const router = useRouter();
@@ -420,8 +422,10 @@ export default function DashboardClient({
                               <div onClick={(e) => e.stopPropagation()}>
                                 <SaveButton
                                   toolId={tool.id}
-                                  initialSaved={savedToolIds.includes(tool.id)}
+                                  initialSaved={(savedToolMap[tool.id]?.length ?? 0) > 0}
                                   isLoggedIn={isLoggedIn}
+                                  userCollections={isLoggedIn ? userCollections : undefined}
+                                  toolCollectionIds={isLoggedIn ? (savedToolMap[tool.id] ?? []) : undefined}
                                   compact
                                 />
                               </div>
