@@ -3,10 +3,14 @@
 import OpenAI from 'openai';
 import { createClient as createPublicClient } from '@supabase/supabase-js';
 import { unstable_cache } from 'next/cache';
-import { headers } from 'next/headers';
-import { Tool, SearchScores } from '@/types';
+import { cache } from 'react';
+import { headers, cookies } from 'next/headers';
+import { Tool, SearchScores, UserProfile } from '@/types';
 import { CATEGORIES } from '@/lib/categories';
 import { rateLimit } from '@/lib/rate-limit';
+import { createClient as createServerClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
+import { applyICPBoost } from '@/lib/icp-boost';
 
 const COLUMNS = 'id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date, is_featured';
 
@@ -217,4 +221,63 @@ export async function aiSearch(
   const pricing  = options.filters?.pricing  ?? null;
 
   return runRankedSearch(query, category, pricing, page, pageSize);
+}
+
+// Deduped per request — safe to call from both personalizedSearch and the page component
+const getSessionProfile = cache(async (): Promise<UserProfile | null> => {
+  try {
+    const userSupabase = createServerClient(await cookies());
+    const { data: { user } } = await userSupabase.auth.getUser();
+    if (!user) return null;
+    const { data } = await createAdminClient()
+      .from('user_profiles')
+      .select('onboarding_status, role, primary_use_case, monthly_budget_range')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    return (data as UserProfile | null);
+  } catch {
+    return null;
+  }
+});
+
+/**
+ * Hybrid search with ICP-aware re-ranking for authenticated users.
+ * Fetches 3× the requested page size from the ranked RPC so the boost
+ * has enough candidates to promote relevant tools without pagination gaps.
+ * Falls back to plain ranked results for unauthenticated or unfinished profiles.
+ */
+export async function personalizedSearch(
+  query: string,
+  options: { page?: number; pageSize?: number; filters?: SearchFilters } = {}
+): Promise<AISearchResult> {
+  if (!query) return { tools: [], intent: EMPTY_INTENT };
+
+  const headersList = await headers();
+  const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (!rateLimit(`search:${ip}`, 30, 60_000)) {
+    return { tools: [], intent: EMPTY_INTENT };
+  }
+
+  const page     = options.page     ?? 1;
+  const pageSize = options.pageSize ?? 20;
+  const category = options.filters?.category ?? null;
+  const pricing  = options.filters?.pricing  ?? null;
+
+  const profile = await getSessionProfile();
+
+  // Without a completed profile there's nothing to boost — use the plain cached path
+  if (!profile || profile.onboarding_status !== 'completed') {
+    return runRankedSearch(query, category, pricing, page, pageSize);
+  }
+
+  // Fetch a wider candidate window so boosted tools from lower positions can surface
+  const candidateSize = pageSize * 3;
+  const { tools: candidates, intent } = await runRankedSearch(
+    query, category, pricing, 1, candidateSize
+  );
+
+  const reranked = applyICPBoost(candidates, profile);
+  const start    = (page - 1) * pageSize;
+
+  return { tools: reranked.slice(start, start + pageSize), intent };
 }

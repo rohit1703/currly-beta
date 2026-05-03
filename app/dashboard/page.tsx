@@ -1,6 +1,6 @@
 import DashboardClient from '@/components/DashboardClient';
 import { getLatestTools, getToolsByCategory } from '@/actions/search';
-import { aiSearch } from '@/actions/ai-search';
+import { personalizedSearch } from '@/actions/ai-search';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
@@ -22,7 +22,7 @@ export default async function Dashboard({
     category
       ? getToolsByCategory(category).then(tools => ({ tools, intent: null }))
       : query
-      ? aiSearch(query)
+      ? personalizedSearch(query)
       : getLatestTools(50).then(tools => ({ tools, intent: null })),
     supabase
       .from('tools')
