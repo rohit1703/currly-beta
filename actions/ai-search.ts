@@ -96,8 +96,9 @@ const getEmbedding = unstable_cache(
   { revalidate: 86400 }
 );
 
-// Core ranked search — results cached 1h per unique (query, category, pricing, page, pageSize)
-const runRankedSearch = unstable_cache(
+// Core ranked search — results cached 1h per unique (query, category, pricing, page, pageSize).
+// Exported so the /api/search route can call it directly after its own rate-limit check.
+export const runRankedSearch = unstable_cache(
   async (
     query: string,
     filterCategory: string | null,

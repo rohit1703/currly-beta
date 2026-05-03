@@ -31,7 +31,8 @@ const COLUMNS = 'id, name, slug, description, main_category, pricing_model, imag
 // --- 1. FAST SEARCH (Text Only - Instant & Cached) ---
 // Defined at module level so unstable_cache persists across requests.
 // Defining it inside the function body creates a new wrapper every call — cache never hits.
-const getCachedTextSearch = unstable_cache(
+// Exported so the /api/search route can call it directly after its own rate-limit check.
+export const getCachedTextSearch = unstable_cache(
   async (q: string): Promise<{ tools: Tool[]; fuzzy: boolean }> => {
     const supabase = createPublicClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
