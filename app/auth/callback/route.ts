@@ -15,19 +15,22 @@ export async function GET(request: Request) {
     const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && session) {
-      // Check if this user has completed onboarding
       const admin = createAdminClient();
       const { data: profile } = await admin
         .from('user_profiles')
-        .select('id')
+        .select('onboarding_status')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
       // Avoid redirecting to /onboarding as the post-onboarding destination
       const finalNext = next.startsWith('/onboarding') ? '/dashboard' : next;
-      const destination = profile
-        ? next
-        : `/onboarding?next=${encodeURIComponent(finalNext)}`;
+      // Send to onboarding only if no row exists or status is still 'not_started'.
+      // 'skipped' and 'completed' both pass through — the DB is the source of truth.
+      // Regression: a user who clicked Skip must not be redirected here again.
+      const needsOnboarding = !profile || profile.onboarding_status === 'not_started';
+      const destination = needsOnboarding
+        ? `/onboarding?next=${encodeURIComponent(finalNext)}`
+        : next;
 
       return NextResponse.redirect(`${origin}${destination}`);
     }

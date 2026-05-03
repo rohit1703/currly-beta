@@ -36,6 +36,7 @@ export default function CollectionPickerPopover({
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [creating, setCreating] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
   const [newName, setNewName] = useState('');
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -112,30 +113,41 @@ export default function CollectionPickerPopover({
     const name = newName.trim();
     if (!name) return;
     setCreateError(null);
+    setCreateLoading(true);
 
     try {
-      const res = await fetch('/api/collections', {
+      const res = await fetch('/api/collections/create-and-add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, tool_id: toolId }),
       });
       const json = await res.json();
-      if (!res.ok) { setCreateError(json.error || 'Failed to create.'); return; }
 
+      if (!res.ok) {
+        setCreateError(json.error || 'Failed to create collection.');
+        posthog?.capture('tool_add_to_new_collection_failed', {
+          tool_id: toolId,
+          reason: json.reason ?? (res.status === 409 ? 'duplicate_name' : 'unknown'),
+          http_status: res.status,
+        });
+        return;
+      }
+
+      // Both create and add succeeded — update parent state and close input
       const newCol: CollectionInfo = { id: json.collection.id, name: json.collection.name };
       onNewCollection(newCol);
-
-      await fetch(`/api/collections/${newCol.id}/tools`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tool_id: toolId }),
-      });
       onToolCollectionIdsChange([...toolCollectionIds, newCol.id]);
-      posthog?.capture('collection_created_inline', { tool_id: toolId });
+      posthog?.capture('collection_created_inline', { tool_id: toolId, collection_id: newCol.id });
       setCreating(false);
       setNewName('');
     } catch {
-      setCreateError('Something went wrong.');
+      setCreateError('Network error — please try again.');
+      posthog?.capture('tool_add_to_new_collection_failed', {
+        tool_id: toolId,
+        reason: 'network_error',
+      });
+    } finally {
+      setCreateLoading(false);
     }
   };
 
@@ -196,18 +208,20 @@ export default function CollectionPickerPopover({
                 placeholder="Collection name"
                 value={newName}
                 maxLength={100}
+                disabled={createLoading}
                 onChange={e => { setNewName(e.target.value); setCreateError(null); }}
                 onKeyDown={e => {
                   if (e.key === 'Enter') createAndAdd();
                   if (e.key === 'Escape') { setCreating(false); setNewName(''); setCreateError(null); }
                 }}
-                className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-transparent focus:outline-none focus:border-[#0066FF] dark:text-white placeholder:text-gray-400"
+                className="flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-white/10 bg-transparent focus:outline-none focus:border-[#0066FF] dark:text-white placeholder:text-gray-400 disabled:opacity-50"
               />
               <button
                 onClick={createAndAdd}
-                className="px-2.5 py-1.5 text-xs bg-[#0066FF] text-white rounded-lg font-bold hover:bg-blue-600 transition-colors"
+                disabled={createLoading}
+                className="px-2.5 py-1.5 text-xs bg-[#0066FF] text-white rounded-lg font-bold hover:bg-blue-600 transition-colors disabled:opacity-60 flex items-center gap-1"
               >
-                Add
+                {createLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Add'}
               </button>
             </div>
             {createError && <p className="text-xs text-red-500">{createError}</p>}

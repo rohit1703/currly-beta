@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Globe, Lock, Link2, Copy, Check, Loader2, X } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 
 export default function CollectionShareControls({
   collectionId,
@@ -14,6 +15,7 @@ export default function CollectionShareControls({
   initialShareToken: string | null;
   siteUrl: string;
 }) {
+  const posthog = usePostHog();
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [shareToken, setShareToken] = useState(initialShareToken);
   const [loading, setLoading] = useState(false);
@@ -41,18 +43,37 @@ export default function CollectionShareControls({
   };
 
   const togglePublic = async () => {
+    // Always send just the desired flag — the server enforces the token invariant.
+    // Always sync share_token from the response (server may have auto-generated one).
     const updated = await patch({ is_public: !isPublic });
-    if (updated) setIsPublic(updated.is_public);
+    if (updated) {
+      const wasPublic = isPublic;
+      setIsPublic(updated.is_public);
+      setShareToken(updated.share_token ?? null);
+      // Fire share link event if a token was created as a side-effect of making public
+      if (!wasPublic && updated.share_token && !shareToken) {
+        posthog?.capture('collection_share_link_generated', { collection_id: collectionId, via: 'toggle' });
+      }
+    }
   };
 
   const generateLink = async () => {
     const updated = await patch({ generate_share_token: true, is_public: true });
-    if (updated) { setShareToken(updated.share_token); setIsPublic(true); }
+    if (updated) {
+      setShareToken(updated.share_token ?? null);
+      setIsPublic(true);
+      posthog?.capture('collection_share_link_generated', { collection_id: collectionId, via: 'button' });
+    }
   };
 
   const revokeLink = async () => {
+    // Server sets both share_token=null and is_public=false atomically.
     const updated = await patch({ revoke_share_token: true });
-    if (updated) { setShareToken(null); setIsPublic(false); }
+    if (updated) {
+      setShareToken(updated.share_token ?? null);   // always null after revoke
+      setIsPublic(updated.is_public);               // always false after revoke
+      posthog?.capture('collection_share_link_revoked', { collection_id: collectionId });
+    }
   };
 
   const copyLink = async () => {

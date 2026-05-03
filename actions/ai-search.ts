@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 import { createClient as createPublicClient } from '@supabase/supabase-js';
 import { unstable_cache } from 'next/cache';
 import { headers } from 'next/headers';
-import { Tool } from '@/types';
+import { Tool, SearchScores } from '@/types';
 import { CATEGORIES } from '@/lib/categories';
 import { rateLimit } from '@/lib/rate-limit';
 
@@ -15,6 +15,11 @@ export interface SearchIntent {
   category: string | null;
   pricing: string[] | null;
   summary: string;
+}
+
+export interface SearchFilters {
+  category?: string | null;
+  pricing?: string[] | null;
 }
 
 export interface AISearchResult {
@@ -91,29 +96,15 @@ const getEmbedding = unstable_cache(
   { revalidate: 86400 }
 );
 
-// Reciprocal Rank Fusion — merges ranked lists into one scored list
-function rrfMerge(lists: Tool[][], k = 60): Tool[] {
-  const scores = new Map<string, number>();
-  const byId = new Map<string, Tool>();
-
-  for (const list of lists) {
-    list.forEach((tool, i) => {
-      const key = String(tool.id);
-      scores.set(key, (scores.get(key) ?? 0) + 1 / (k + i + 1));
-      byId.set(key, tool);
-    });
-  }
-
-  return [...scores.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([id]) => byId.get(id)!)
-    .filter(Boolean)
-    .slice(0, 20);
-}
-
-// Full hybrid search — cached 1h per query
-const runHybridSearch = unstable_cache(
-  async (query: string): Promise<AISearchResult> => {
+// Core ranked search — results cached 1h per unique (query, category, pricing, page, pageSize)
+const runRankedSearch = unstable_cache(
+  async (
+    query: string,
+    filterCategory: string | null,
+    filterPricing: string[] | null,
+    page: number,
+    pageSize: number
+  ): Promise<AISearchResult> => {
     const supabase = createPublicClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -125,60 +116,92 @@ const runHybridSearch = unstable_cache(
       getEmbedding(query),
     ]);
 
-    // FTS on expanded terms + optional category filter
+    // Merge intent-derived filters with explicit caller filters (caller wins)
+    const effectiveCategory = filterCategory !== undefined ? filterCategory : intent.category;
+    const effectivePricing  = filterPricing  !== undefined ? filterPricing  : intent.pricing;
+
+    // FTS query: join intent-expanded terms with OR
     const ftsQuery = intent.terms.join(' | ');
-    let ftsReq = supabase
-      .from('tools')
-      .select(COLUMNS)
-      .eq('launch_status', 'Live')
-      .textSearch('fts', ftsQuery, { type: 'websearch', config: 'english' })
-      .limit(20);
 
-    if (intent.category) ftsReq = ftsReq.eq('main_category', intent.category);
+    // Call the unified ranked RPC
+    const { data: rankedData, error } = await supabase.rpc('match_tools_ranked', {
+      query_embedding:  embedding    ?? null,
+      query_fts:        ftsQuery     || null,
+      match_mode:       'search',
+      filter_category:  effectiveCategory ?? null,
+      filter_pricing:   effectivePricing  ?? null,
+      page_number:      page,
+      page_size:        pageSize,
+    });
 
-    // Vector search on original query
-    const vectorReq = embedding
-      ? supabase.rpc('match_tools', { query_embedding: embedding, match_threshold: 0.25, match_count: 20 })
-      : Promise.resolve({ data: [] as any[] });
-
-    const [ftsRes, vectorRes] = await Promise.all([ftsReq, vectorReq]);
-
-    let ftsTools = (ftsRes.data || []) as Tool[];
-    let vectorTools = (vectorRes.data || []) as Tool[];
-
-    // Apply pricing filter as post-process (works across both result sets)
-    if (intent.pricing?.length) {
-      const filter = (t: Tool) => {
-        const pm = t.pricing_model?.toLowerCase() ?? '';
-        return intent.pricing!.some(p => pm.includes(p.toLowerCase()));
-      };
-      ftsTools = ftsTools.filter(filter);
-      vectorTools = vectorTools.filter(filter);
+    if (error) {
+      console.error('[match_tools_ranked] RPC error:', error.message);
     }
 
-    let tools: Tool[];
+    let tools = mapRankedRows(rankedData ?? []);
 
-    if (ftsTools.length > 0 || vectorTools.length > 0) {
-      tools = rrfMerge([ftsTools, vectorTools]);
-    } else {
-      // Fallback: ilike on expanded terms without strict filters
-      const fallbackQuery = intent.terms.map(t => `name.ilike.%${t}%,description.ilike.%${t}%`).join(',');
+    // Fallback: ilike on expanded terms if RPC returned nothing
+    if (tools.length === 0) {
+      const fallbackQuery = intent.terms
+        .map(t => `name.ilike.%${t}%,description.ilike.%${t}%`)
+        .join(',');
       const { data } = await supabase
         .from('tools')
         .select(COLUMNS)
         .eq('launch_status', 'Live')
         .or(fallbackQuery)
-        .limit(20);
+        .limit(pageSize);
       tools = (data || []) as Tool[];
+    }
+
+    // Fallback: trigram fuzzy search if ilike also returned nothing
+    if (tools.length === 0) {
+      const { data } = await supabase.rpc('fuzzy_search_tools', {
+        search_query: query,
+        match_count: pageSize,
+      });
+      tools = (data as Tool[]) || [];
     }
 
     return { tools, intent };
   },
-  ['hybrid-search'],
+  ['ranked-search'],
   { revalidate: 3600, tags: ['tools'] }
 );
 
-export async function aiSearch(query: string): Promise<AISearchResult> {
+// Map RPC rows: strip score columns into _scores, return Tool objects
+function mapRankedRows(rows: Record<string, unknown>[]): Tool[] {
+  return rows.map(row => {
+    const scores: SearchScores = {
+      lexical:   (row.lexical_score  as number) ?? 0,
+      semantic:  (row.semantic_score as number) ?? 0,
+      quality:   (row.quality_score  as number) ?? 0,
+      freshness: (row.freshness_score as number) ?? 0,
+      behavior:  (row.behavior_score as number) ?? 0,
+      final:     (row.final_score    as number) ?? 0,
+    };
+    const tool: Tool = {
+      id:            row.id            as string,
+      name:          row.name          as string,
+      slug:          row.slug          as string,
+      description:   row.description   as string,
+      main_category: row.main_category as string,
+      pricing_model: row.pricing_model as string,
+      image_url:     row.image_url     as string,
+      is_india_based: row.is_india_based as boolean | undefined,
+      website:       row.website       as string,
+      launch_date:   row.launch_date   as string,
+      is_featured:   row.is_featured   as boolean | undefined,
+      _scores:       scores,
+    };
+    return tool;
+  });
+}
+
+export async function aiSearch(
+  query: string,
+  options: { page?: number; pageSize?: number; filters?: SearchFilters } = {}
+): Promise<AISearchResult> {
   if (!query) return { tools: [], intent: EMPTY_INTENT };
 
   const headersList = await headers();
@@ -187,5 +210,10 @@ export async function aiSearch(query: string): Promise<AISearchResult> {
     return { tools: [], intent: EMPTY_INTENT };
   }
 
-  return runHybridSearch(query);
+  const page     = options.page     ?? 1;
+  const pageSize = options.pageSize ?? 20;
+  const category = options.filters?.category ?? null;
+  const pricing  = options.filters?.pricing  ?? null;
+
+  return runRankedSearch(query, category, pricing, page, pageSize);
 }

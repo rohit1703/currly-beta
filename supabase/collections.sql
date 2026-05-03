@@ -17,6 +17,45 @@ CREATE TABLE IF NOT EXISTS public.collections (
   CONSTRAINT collections_user_name_key UNIQUE (user_id, name)
 );
 
+-- Add any columns that may be missing if the table was created in an earlier partial run.
+ALTER TABLE public.collections ADD COLUMN IF NOT EXISTS description  text        CHECK (char_length(description) <= 500);
+ALTER TABLE public.collections ADD COLUMN IF NOT EXISTS share_token  uuid        UNIQUE;
+ALTER TABLE public.collections ADD COLUMN IF NOT EXISTS is_public    boolean     NOT NULL DEFAULT false;
+ALTER TABLE public.collections ADD COLUMN IF NOT EXISTS updated_at   timestamptz NOT NULL DEFAULT now();
+
+-- Clean up any ghost-public rows before adding the constraint.
+-- These rows had is_public=true but no share_token, making them unreachable anyway.
+UPDATE public.collections
+SET is_public = false
+WHERE is_public = true AND share_token IS NULL;
+
+-- Invariant: a public collection must always have a share token.
+-- Prevents ghost-public state even if rows are written outside the API.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'collections_public_requires_token'
+      AND conrelid = 'public.collections'::regclass
+  ) THEN
+    ALTER TABLE public.collections
+      ADD CONSTRAINT collections_public_requires_token
+      CHECK (NOT (is_public = true AND share_token IS NULL));
+  END IF;
+END$$;
+
+-- Ensure the composite unique constraint exists.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'collections_user_name_key'
+      AND conrelid = 'public.collections'::regclass
+  ) THEN
+    ALTER TABLE public.collections ADD CONSTRAINT collections_user_name_key UNIQUE (user_id, name);
+  END IF;
+END$$;
+
 CREATE INDEX IF NOT EXISTS idx_collections_user_id
   ON public.collections(user_id);
 CREATE INDEX IF NOT EXISTS idx_collections_share_token

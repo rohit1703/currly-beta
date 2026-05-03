@@ -42,6 +42,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: 'Invalid request body.' }, { status: 400 });
   }
 
+  const admin = createAdminClient();
+
+  // ── Skip action ───────────────────────────────────────────────────────
+  // Only records the intent — never overwrites a completed profile row.
+  if ((body as any)?.action === 'skip') {
+    const { data: existing } = await admin
+      .from('user_profiles')
+      .select('onboarding_status')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (existing?.onboarding_status !== 'completed') {
+      const { error } = await admin
+        .from('user_profiles')
+        .upsert({ user_id: user.id, onboarding_status: 'skipped' }, { onConflict: 'user_id' });
+      if (error) {
+        console.error('upsert skip user_profiles:', error.message);
+        return NextResponse.json({ success: false, message: 'Failed to save.' }, { status: 500 });
+      }
+    }
+    return NextResponse.json({ success: true });
+  }
+
+  // ── Full profile submission ───────────────────────────────────────────
   const result = UserProfileSchema.safeParse(body);
   if (!result.success) {
     return NextResponse.json(
@@ -50,10 +74,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const admin = createAdminClient();
   const { error } = await admin
     .from('user_profiles')
-    .upsert({ user_id: user.id, ...result.data }, { onConflict: 'user_id' });
+    .upsert(
+      { user_id: user.id, onboarding_status: 'completed', ...result.data },
+      { onConflict: 'user_id' }
+    );
 
   if (error) {
     console.error('upsert user_profiles:', error.message);

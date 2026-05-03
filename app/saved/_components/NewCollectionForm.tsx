@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Loader2 } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 
 export default function NewCollectionForm({ asCard = false }: { asCard?: boolean }) {
   const router = useRouter();
+  const posthog = usePostHog();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,6 +26,7 @@ export default function NewCollectionForm({ asCard = false }: { asCard?: boolean
       });
       const json = await res.json();
       if (!res.ok) { setError(json.error || 'Failed to create.'); return; }
+      posthog?.capture('collection_created', { name: trimmed });
       setName('');
       setOpen(false);
       router.refresh();

@@ -1,3 +1,12 @@
+export interface SearchScores {
+  lexical: number;
+  semantic: number;
+  quality: number;
+  freshness: number;
+  behavior: number;
+  final: number;
+}
+
 export interface Tool {
   id: string | number;
   notion_id?: string;
@@ -17,6 +26,7 @@ export interface Tool {
   embedding?: number[];
   website_url?: string;
   logo_url?: string;
+  _scores?: SearchScores;
 }
 
 export interface Category {
@@ -41,12 +51,13 @@ export interface Collection {
 export interface UserProfile {
   id: string;
   user_id: string;
-  role: string;
-  company_stage: string;
-  team_size: string;
-  region: string;
-  monthly_budget_range: string;
-  primary_use_case: string;
+  onboarding_status: 'not_started' | 'skipped' | 'completed';
+  role: string | null;
+  company_stage: string | null;
+  team_size: string | null;
+  region: string | null;
+  monthly_budget_range: string | null;
+  primary_use_case: string | null;
   created_at: string;
   updated_at: string;
 }

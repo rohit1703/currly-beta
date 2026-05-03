@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
+import { usePostHog } from 'posthog-js/react';
 
 export default function CollectionManageControls({
   collectionId,
@@ -14,6 +15,7 @@ export default function CollectionManageControls({
   initialDescription: string;
 }) {
   const router = useRouter();
+  const posthog = usePostHog();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
@@ -52,6 +54,7 @@ export default function CollectionManageControls({
       const res = await fetch(`/api/collections/${collectionId}`, { method: 'DELETE' });
       const json = await res.json();
       if (!res.ok) { setDeleteError(json.error || 'Failed to delete.'); setDeleting(false); return; }
+      posthog?.capture('collection_deleted', { collection_id: collectionId });
       router.push('/saved');
     } catch {
       setDeleteError('Something went wrong.');

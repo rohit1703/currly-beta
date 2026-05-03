@@ -61,6 +61,15 @@ export async function PATCH(
     updates.is_public = false;
   }
 
+  // Server-side invariant: is_public=true must always have a share_token.
+  // This is a safety net for direct API calls that omit generate_share_token.
+  // Compute the resulting state after all flag processing.
+  const finalIsPublic = 'is_public' in updates ? updates.is_public : collection.is_public;
+  const finalToken    = 'share_token' in updates ? updates.share_token : collection.share_token;
+  if (finalIsPublic === true && !finalToken) {
+    updates.share_token = crypto.randomUUID();
+  }
+
   const { data, error } = await admin
     .from('collections')
     .update(updates)

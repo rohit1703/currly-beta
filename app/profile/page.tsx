@@ -193,7 +193,7 @@ export default async function ProfilePage() {
             </Link>
           </div>
 
-          {userProfile ? (
+          {userProfile?.role ? (
             <div className="flex flex-wrap gap-2">
               {[
                 userProfile.role,

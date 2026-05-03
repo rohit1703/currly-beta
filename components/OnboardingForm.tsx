@@ -62,16 +62,20 @@ export default function OnboardingForm({ initialProfile, next: nextProp }: Props
   const nextParam = nextProp || '/dashboard';
   const posthog = usePostHog();
 
+  // A profile row exists for both 'completed' and 'skipped' users;
+  // only pre-fill the form when the user has actually submitted data before.
+  const hasProfileData = !!initialProfile && initialProfile.onboarding_status === 'completed';
+
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(
-    initialProfile
+    hasProfileData
       ? {
-          role: initialProfile.role,
-          company_stage: initialProfile.company_stage,
-          team_size: initialProfile.team_size,
-          region: initialProfile.region,
-          monthly_budget_range: initialProfile.monthly_budget_range,
-          primary_use_case: initialProfile.primary_use_case,
+          role: initialProfile!.role ?? '',
+          company_stage: initialProfile!.company_stage ?? '',
+          team_size: initialProfile!.team_size ?? '',
+          region: initialProfile!.region ?? '',
+          monthly_budget_range: initialProfile!.monthly_budget_range ?? '',
+          primary_use_case: initialProfile!.primary_use_case ?? '',
         }
       : EMPTY_FORM
   );
@@ -81,7 +85,7 @@ export default function OnboardingForm({ initialProfile, next: nextProp }: Props
   const [loadedFromAnon, setLoadedFromAnon] = useState(false);
 
   useEffect(() => {
-    if (!initialProfile) {
+    if (!hasProfileData) {
       try {
         const raw = localStorage.getItem(ANON_KEY);
         if (raw) {
@@ -95,7 +99,8 @@ export default function OnboardingForm({ initialProfile, next: nextProp }: Props
     }
     posthog?.capture('icp_form_viewed', {
       is_returning: !!initialProfile,
-      prefilled_from_anon: !initialProfile && !!localStorage.getItem(ANON_KEY),
+      onboarding_status: initialProfile?.onboarding_status ?? 'not_started',
+      prefilled_from_anon: !hasProfileData && !!localStorage.getItem(ANON_KEY),
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -235,12 +240,28 @@ export default function OnboardingForm({ initialProfile, next: nextProp }: Props
         </button>
       </div>
 
-      {/* Skip */}
-      {!initialProfile && (
+      {/* Skip — shown for new users and users who previously skipped */}
+      {!hasProfileData && (
         <div className="mt-4 text-center">
           <button
             type="button"
-            onClick={() => router.push(nextParam)}
+            onClick={async () => {
+              posthog?.capture('icp_form_skipped', {
+                step: step + 1,
+                step_label: currentStepDef.label,
+                is_returning: !!initialProfile,
+                prefilled_from_anon: loadedFromAnon,
+              });
+              // Persist the skip durably so the auth callback won't redirect again
+              try {
+                await fetch('/api/user/profile', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'skip' }),
+                });
+              } catch {}
+              router.push(nextParam);
+            }}
             className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             Skip for now

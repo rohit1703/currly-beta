@@ -6,16 +6,37 @@
 CREATE TABLE IF NOT EXISTS public.user_profiles (
   id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id              uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role                 text NOT NULL,
-  company_stage        text NOT NULL,
-  team_size            text NOT NULL,
-  region               text NOT NULL,
-  monthly_budget_range text NOT NULL,
-  primary_use_case     text NOT NULL,
+  onboarding_status    text NOT NULL DEFAULT 'not_started'
+                         CONSTRAINT user_profiles_status_check
+                         CHECK (onboarding_status IN ('not_started', 'skipped', 'completed')),
+  role                 text,
+  company_stage        text,
+  team_size            text,
+  region               text,
+  monthly_budget_range text,
+  primary_use_case     text,
   created_at           timestamptz NOT NULL DEFAULT now(),
   updated_at           timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT user_profiles_user_id_key UNIQUE (user_id)
 );
+
+-- ── Idempotent schema evolution (for existing deployments) ────────────
+ALTER TABLE public.user_profiles ALTER COLUMN role          DROP NOT NULL;
+ALTER TABLE public.user_profiles ALTER COLUMN company_stage DROP NOT NULL;
+ALTER TABLE public.user_profiles ALTER COLUMN team_size     DROP NOT NULL;
+ALTER TABLE public.user_profiles ALTER COLUMN region        DROP NOT NULL;
+ALTER TABLE public.user_profiles ALTER COLUMN monthly_budget_range DROP NOT NULL;
+ALTER TABLE public.user_profiles ALTER COLUMN primary_use_case    DROP NOT NULL;
+
+ALTER TABLE public.user_profiles
+  ADD COLUMN IF NOT EXISTS onboarding_status text NOT NULL DEFAULT 'not_started'
+  CONSTRAINT user_profiles_status_check
+  CHECK (onboarding_status IN ('not_started', 'skipped', 'completed'));
+
+-- Back-fill rows that have profile data to 'completed'
+UPDATE public.user_profiles
+  SET onboarding_status = 'completed'
+  WHERE onboarding_status = 'not_started' AND role IS NOT NULL;
 
 -- Auto-update updated_at on every row change
 CREATE OR REPLACE FUNCTION public.set_updated_at()
