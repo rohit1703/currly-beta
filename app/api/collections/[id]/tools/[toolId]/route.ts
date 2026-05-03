@@ -9,6 +9,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; toolId: string }> }
 ) {
   const { id: collectionId, toolId } = await params;
+
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(collectionId) || !UUID_RE.test(toolId)) {
+    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+  }
+
   const userSupabase = createClient(await cookies());
   const { data: { user } } = await userSupabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

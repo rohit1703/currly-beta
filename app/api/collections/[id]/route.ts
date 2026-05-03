@@ -13,7 +13,10 @@ const PatchSchema = z.object({
   revoke_share_token:   z.boolean().optional(),
 });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function getOwnedCollection(admin: ReturnType<typeof createAdminClient>, collectionId: string, userId: string) {
+  if (!UUID_RE.test(collectionId)) return null;
   const { data } = await admin
     .from('collections')
     .select('id, name, user_id, share_token, is_public')
