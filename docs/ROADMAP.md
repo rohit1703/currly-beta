@@ -69,6 +69,32 @@ These are non-negotiable before any growth push.
 
 ---
 
+---
+
+## Performance Gates (must hold before each growth push)
+
+Hard numbers agreed 2026-05-03. Alert if any gate breaches for 2+ consecutive days.
+
+| Signal | Gate | Source |
+|--------|------|--------|
+| p95 search latency | < 400 ms | `api_usage.duration_ms` |
+| Zero-result rate | < 8% of searches | `admin_zero_click_queries` |
+| Search CTR | > 20% avg | `admin_query_performance` |
+| Decision submit rate | > 15% of compare-page sessions | `admin_decision_volume.submit_rate_pct` |
+| Avg decision confidence | ≥ 2.0 (Probably) | `admin_decision_volume.avg_confidence` |
+| API error rate | < 0.5% of requests | server logs / Vercel function errors |
+| Rate-limit hit rate | < 1% of requests | 429 response count |
+
+### Runbook — gate breach
+
+1. Check `admin_decision_volume` and `admin_query_performance` views for the affected date range.
+2. For latency: inspect `api_usage` for slow queries; check HNSW recall with `EXPLAIN ANALYZE` on `match_tools_ranked`.
+3. For zero-result spikes: check `admin_zero_click_queries` for new query patterns → add tools or synonyms.
+4. For submit-rate drops: check `decision_started` vs `decision_submitted` events in PostHog funnel.
+5. Escalation threshold: if any gate breaches for **5+ consecutive days**, halt growth campaigns until resolved.
+
+---
+
 ## Not On The Roadmap
 
 These were considered and explicitly rejected or deferred indefinitely:

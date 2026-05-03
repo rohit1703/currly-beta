@@ -11,6 +11,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { createClient as createServerClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { applyICPBoost } from '@/lib/icp-boost';
+import { applyOutcomeBoost } from '@/lib/outcome-boost';
 
 const COLUMNS = 'id, name, slug, description, main_category, pricing_model, image_url, is_india_based, website, launch_date, is_featured';
 
@@ -100,6 +101,21 @@ const getEmbedding = unstable_cache(
   { revalidate: 86400 }
 );
 
+// Outcome signals from materialized view — cached 1h, refreshed on outcome writes.
+// Returns empty map when the mat view is empty (< 3 outcomes per tool).
+const getOutcomeSignals = unstable_cache(
+  async (): Promise<Record<string, number>> => {
+    const { data } = await createAdminClient()
+      .from('outcome_signals')
+      .select('tool_id, outcome_score');
+    const map: Record<string, number> = {};
+    for (const row of data ?? []) map[String(row.tool_id)] = row.outcome_score;
+    return map;
+  },
+  ['outcome-signals'],
+  { revalidate: 3600, tags: ['tools'] }
+);
+
 // Core ranked search — results cached 1h per unique (query, category, pricing, page, pageSize).
 // Exported so the /api/search route can call it directly after its own rate-limit check.
 export const runRankedSearch = unstable_cache(
@@ -125,8 +141,8 @@ export const runRankedSearch = unstable_cache(
     const effectiveCategory = filterCategory !== undefined ? filterCategory : intent.category;
     const effectivePricing  = filterPricing  !== undefined ? filterPricing  : intent.pricing;
 
-    // FTS query: join intent-expanded terms with OR
-    const ftsQuery = intent.terms.join(' | ');
+    // FTS query: websearch_to_tsquery uses "OR" keyword, not "|" (which it strips as punctuation)
+    const ftsQuery = intent.terms.join(' OR ');
 
     // Call the unified ranked RPC
     const { data: rankedData, error } = await supabase.rpc('match_tools_ranked', {
@@ -170,7 +186,7 @@ export const runRankedSearch = unstable_cache(
 
     return { tools, intent };
   },
-  ['ranked-search'],
+  ['ranked-search-v2'],
   { revalidate: 3600, tags: ['tools'] }
 );
 
@@ -276,8 +292,14 @@ export async function personalizedSearch(
     query, category, pricing, 1, candidateSize
   );
 
-  const reranked = applyICPBoost(candidates, profile);
-  const start    = (page - 1) * pageSize;
+  let reranked = applyICPBoost(candidates, profile);
 
+  // Outcome signal boost — only when ENABLE_OUTCOME_RANKING=true and mat view has data
+  if (process.env.ENABLE_OUTCOME_RANKING === 'true') {
+    const outcomeSignals = await getOutcomeSignals();
+    reranked = applyOutcomeBoost(reranked, outcomeSignals);
+  }
+
+  const start = (page - 1) * pageSize;
   return { tools: reranked.slice(start, start + pageSize), intent };
 }

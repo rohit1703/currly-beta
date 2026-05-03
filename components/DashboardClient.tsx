@@ -18,6 +18,7 @@ import SearchAutocomplete from '@/components/SearchAutocomplete';
 import { logToolClick, loadMoreTools } from '@/actions/search';
 import CompareModal from '@/components/CompareModal';
 import SaveButton from '@/components/SaveButton';
+import { OutcomePrompt } from '@/components/OutcomePrompt';
 import { getCategoryIcon, categoryToSlug } from '@/lib/categories';
 import type { SearchIntent } from '@/actions/ai-search';
 
@@ -278,7 +279,8 @@ export default function DashboardClient({
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-10 scroll-smooth">
-          
+          {isLoggedIn && <OutcomePrompt />}
+
           {/* --- SEARCH TAB CONTENT --- */}
           {activeTab === 'search' && (
             <>

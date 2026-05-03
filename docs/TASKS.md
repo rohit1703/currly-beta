@@ -1,6 +1,6 @@
 # Currly Beta — Task Backlog
 
-**Last updated:** 2026-05-03  
+**Last updated:** 2026-05-03 (Decision Capture shipped)  
 Format: `[ ]` open · `[x]` done · `[-]` deferred
 
 ---
@@ -9,44 +9,16 @@ Format: `[ ]` open · `[x]` done · `[-]` deferred
 
 ### Database
 
-- [ ] **Verify GIN index on `tools.fts`**
-  ```sql
-  SELECT indexname FROM pg_indexes WHERE tablename = 'tools' AND indexdef LIKE '%gin%';
-  -- Expected: idx_tools_fts
-  -- If missing:
-  CREATE INDEX IF NOT EXISTS idx_tools_fts ON public.tools USING gin(fts);
-  ```
+- [x] **Verify GIN index on `tools.fts`** — created by search.sql
+- [x] **Verify HNSW index on `tools.embedding`** — created by search.sql (replaced ivfflat)
+- [x] **Verify required RPCs exist** — match_tools, fuzzy_search_tools, increment_search_count, match_tools_ranked created by search.sql
+- [x] **Run `supabase/user_profiles.sql`** — onboarding_status column live, profile fields nullable, existing rows backfilled to 'completed'
+- [x] **Run `supabase/collections.sql`** — collections_public_requires_token CHECK constraint live
 
-- [ ] **Verify HNSW index on `tools.embedding`**
+- [ ] **Drop `saved_tools` table** (after confirming 48h stability — due 2026-05-05)
   ```sql
-  SELECT indexname FROM pg_indexes WHERE tablename = 'tools' AND indexdef LIKE '%hnsw%';
-  -- If missing (search.sql handles this, but manual fallback):
-  DROP INDEX IF EXISTS idx_tools_embedding_ivfflat;
-  CREATE INDEX IF NOT EXISTS idx_tools_embedding_hnsw
-    ON public.tools USING hnsw (embedding vector_cosine_ops)
-    WITH (m = 16, ef_construction = 64);
-  -- Note: ivfflat was replaced because its training phase requires O(rows × dim) memory,
-  -- hitting Supabase's 32 MB maintenance_work_mem limit. HNSW is O(ef_construction × dim).
-  ```
-
-- [ ] **Verify required RPCs exist**
-  ```sql
-  SELECT routine_name FROM information_schema.routines
-  WHERE routine_schema = 'public'
-    AND routine_name IN ('match_tools', 'fuzzy_search_tools', 'increment_search_count');
-  -- Expected: 3 rows
-  ```
-
-- [ ] **Drop `saved_tools` table** (after confirming 48h stability with collections)
-  ```sql
-  -- Verify nothing reads from it first:
-  -- grep -r "saved_tools" actions/ app/ components/ --include="*.ts" --include="*.tsx"
   DROP TABLE IF EXISTS public.saved_tools;
   ```
-
-- [ ] **Run `supabase/user_profiles.sql`** — adds `onboarding_status` column, makes profile fields nullable, backfills existing rows to `'completed'`
-
-- [ ] **Run `supabase/collections.sql`** — adds `collections_public_requires_token` CHECK constraint (cleanup of ghost-public rows included)
 
 ### Code
 
@@ -54,7 +26,7 @@ Format: `[ ]` open · `[x]` done · `[-]` deferred
 - [x] Enforce `is_public` + `share_token` invariant (DB constraint + API + client)
 - [x] Durable onboarding skip (`onboarding_status` in DB, no cookie)
 - [x] Add missing analytics: `collection_created`, `collection_deleted`, `collection_share_link_generated`, `collection_share_link_revoked`, `icp_form_skipped`
-- [ ] **Validate `toolId` as UUID in `DELETE /api/collections/[id]/tools/[toolId]`**
+- [x] **Validate `toolId` as UUID in `DELETE /api/collections/[id]/tools/[toolId]`**
   ```typescript
   // app/api/collections/[id]/tools/[toolId]/route.ts
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -68,23 +40,9 @@ Format: `[ ]` open · `[x]` done · `[-]` deferred
 
 ### SQL / Indexes / Materialized Views
 
-- [ ] **Create `supabase/search.sql`** — document FTS setup so it's reproducible:
-  - `fts` tsvector generated column or trigger definition
-  - GIN index
-  - ivfflat index with tuned `lists` value
-  - `pg_trgm` extension enable
-  - `vector` extension enable
-  - `match_tools` RPC
-  - `fuzzy_search_tools` RPC
-  - `increment_search_count` RPC
+- [x] **Create `supabase/search.sql`** — idempotent migration: pg_trgm + vector extensions, search_tsv generated column, GIN index, HNSW index (m=16, ef_construction=64), match_tools_ranked RPC, fuzzy_search_tools RPC, increment_search_count RPC
 
-- [ ] **Tune ivfflat `lists` parameter**
-  ```sql
-  -- Rule of thumb: lists ≈ sqrt(row_count)
-  -- Check current count:
-  SELECT COUNT(*) FROM tools WHERE launch_status = 'Live';
-  -- Rebuild index with appropriate lists value if needed
-  ```
+- [-] ~~Tune ivfflat `lists` parameter~~ — HNSW replaced ivfflat; no lists parameter needed
 
 - [ ] **Materialized view: `tool_search_signals`**
   ```sql
@@ -114,18 +72,18 @@ Format: `[ ]` open · `[x]` done · `[-]` deferred
 
 ### API
 
-- [ ] **Create `POST /api/search` route**
+- [x] **Create `POST /api/search` route**
   - Unifies `aiSearch` + `quickSearch` into one HTTP endpoint
   - Accepts `{ q: string, mode: 'hybrid' | 'quick' | 'autocomplete' }`
   - Returns `{ tools: Tool[], intent: SearchIntent | null, fuzzy: boolean }`
   - Applies same rate limit (30/min/IP) and caching (1h) as current server actions
   - Enables search from client components and edge functions
 
-- [ ] **Add search route to API usage tracking** — log to `api_usage` table on each call
+- [x] **Add search route to API usage tracking** — log to `api_usage` table on each call (run supabase/api_usage.sql first)
 
 ### Personalisation
 
-- [ ] **ICP-aware result re-ranking**
+- [x] **ICP-aware result re-ranking**
   - After RRF merge, apply a soft boost to tools matching the logged-in user's `primary_use_case` and `main_category` preference
   - Boost factor: `× 1.2` for matching use_case, `× 1.1` for matching pricing preference
   - Only apply when `user_profiles.onboarding_status = 'completed'`
@@ -157,6 +115,39 @@ Format: `[ ]` open · `[x]` done · `[-]` deferred
   - Derive pairs from `tool_clicks` co-occurrence data
 - [ ] JSON-LD `ItemList` on category pages
 - [ ] Sitemap generation (`/sitemap.xml`) including all live tool slugs and public `/s/[token]` pages
+
+### Outcome Collection (Initiative 2)
+
+- [x] **`supabase/outcomes.sql`** — `workflow_outcomes` table, `outcome_signals` mat view, `refresh_outcome_signals()` RPC, admin view; **run in Supabase**
+- [x] **`app/api/outcomes/route.ts`** — POST endpoint; upsert outcome; triggers mat view refresh on rated submissions
+- [x] **`app/api/outcomes/pending/route.ts`** — GET endpoint; returns first pending D7/D30 check for authenticated user
+- [x] **`components/OutcomePrompt.tsx`** — dismissible inline card on dashboard; loads client-side so it never blocks page render; fires `outcome_prompt_shown`, `outcome_submitted`, `outcome_skipped`
+- [x] **Run `supabase/outcomes.sql`** in Supabase SQL Editor — run 2026-05-03
+
+### Ranking Flywheel (Initiative 4)
+
+- [x] **`lib/outcome-boost.ts`** — `applyOutcomeBoost()`: multiplicative lift up to +10% for tools with avg_satisfaction ≥ 4
+- [x] **`actions/ai-search.ts`** — `ENABLE_OUTCOME_RANKING=true` env var gates outcome boost after ICP re-rank; `getOutcomeSignals()` cached 1h from mat view
+- [x] **`__tests__/search-ranking.fixtures.ts`** — expanded from 7 to 25 fixtures: pipeline integrity, filters, intent queries, use-case queries, pagination, edge cases; added `scoresInRange` and `noOverlapWithPage1` assertion types
+
+### Performance Gates (Initiative 5)
+
+- [x] **Hard targets written into `ROADMAP.md`** — p95 latency < 400ms, submit rate > 15%, zero-result < 8%, CTR > 20%, error rate < 0.5%; runbook included
+
+### Beachhead Landing Pages (Initiative 3)
+
+- [x] **`lib/stack-templates.ts`** — 6 use-case configs, 2 templates each, with tool slugs + compare pairs
+- [x] **`app/stacks/[use-case]/page.tsx`** — statically generated per use case; fetches live tools by slug; passes to client
+- [x] **`app/stacks/[use-case]/_components/StackLanding.tsx`** — full page UI with 4 PostHog events (page_viewed, tool_clicked, compare_clicked, save_clicked)
+- [x] **`app/stacks/page.tsx`** — index listing all use cases
+
+### Decision Capture (Initiative 1)
+
+- [x] **`docs/DECISION_SPEC.md`** — full spec written
+- [x] **`supabase/decisions.sql`** — decision_sessions, tool_choices, tool_rejections + admin_decision_volume view; run 2026-05-03
+- [x] **`app/api/decisions/route.ts`** — POST endpoint, optional auth, 10/min rate limit
+- [x] **`DecisionPrompt.tsx`** — 3-step compare-page prompt (choice → confidence → confirmation)
+- [x] **`app/admin/decisions/page.tsx`** — admin dashboard: KPI strip + daily volume by ICP + recent sessions
 
 ### Analytics
 

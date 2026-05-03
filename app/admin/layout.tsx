@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { LayoutDashboard, Search, BarChart3, Users, Activity, Wrench, PlusCircle, ShieldCheck, Upload } from 'lucide-react';
+import { LayoutDashboard, Search, BarChart3, Users, Activity, Wrench, PlusCircle, ShieldCheck, Upload, Vote } from 'lucide-react';
 
 const nav = [
   { label: 'Overview', href: '/admin', icon: LayoutDashboard },
   { label: 'Search Intelligence', href: '/admin/search', icon: Search },
   { label: 'Tool Analytics', href: '/admin/tools-analytics', icon: BarChart3 },
+  { label: 'Decisions', href: '/admin/decisions', icon: Vote },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Index Health', href: '/admin/health', icon: Activity },
   { label: 'Real-time', href: '/admin/realtime', icon: Activity },

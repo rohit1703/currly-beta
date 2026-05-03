@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { ArrowLeft, ExternalLink, Check, X, Globe } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { DecisionPrompt } from './_components/DecisionPrompt';
 import type { Metadata } from 'next';
 
 const supabase = createAdminClient();
@@ -170,6 +171,14 @@ export default async function ComparePage({
             v2={t2.website ? new URL(t2.website).hostname : null}
           />
         </div>
+
+        {/* Decision prompt */}
+        <DecisionPrompt
+          tools={[
+            { id: t1.id, name: t1.name, image_url: t1.image_url },
+            { id: t2.id, name: t2.name, image_url: t2.image_url },
+          ]}
+        />
 
         {/* Share this comparison */}
         <div className="mt-10 text-center">

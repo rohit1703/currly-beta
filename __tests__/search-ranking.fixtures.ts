@@ -19,7 +19,6 @@ export interface RankingFixture {
   filters?: { category?: string; pricing?: string[] };
   page?: number;
   pageSize?: number;
-  /** Assertions on the returned result set */
   assertions: FixtureAssertion[];
 }
 
@@ -30,13 +29,18 @@ export type FixtureAssertion =
   | { type: 'finalScoreDescending' }
   | { type: 'categoryFilter'; expected: string }
   | { type: 'pricingFilter'; allowed: string[] }
-  | { type: 'featuredBoost' }       // at least one featured tool in top 5
+  | { type: 'featuredBoost' }
   | { type: 'noEmptyNames' }
-  | { type: 'semanticSignal' };     // at least one result has semantic_score > 0
+  | { type: 'semanticSignal' }
+  | { type: 'noOverlapWithPage1'; page1Ids: string[] }
+  | { type: 'scoresInRange' };   // all score fields in [0, 1]
 
 // ── Fixtures ─────────────────────────────────────────────────────
 
 export const rankingFixtures: RankingFixture[] = [
+
+  // ── Core pipeline integrity ──────────────────────────────────
+
   {
     label: 'broad query returns results with scores',
     query: 'AI writing assistant',
@@ -48,21 +52,11 @@ export const rankingFixtures: RankingFixture[] = [
     ],
   },
   {
-    label: 'category filter restricts to correct category',
-    query: 'image generation',
-    filters: { category: 'Image Generation' },
+    label: 'all score fields are numbers in [0, 1] range',
+    query: 'video editing',
     assertions: [
-      { type: 'minResults', count: 1 },
-      { type: 'categoryFilter', expected: 'Image Generation' },
-      { type: 'finalScoreDescending' },
-    ],
-  },
-  {
-    label: 'free pricing filter returns only matching tools',
-    query: 'code completion',
-    filters: { pricing: ['Free', 'Freemium'] },
-    assertions: [
-      { type: 'pricingFilter', allowed: ['Free', 'Freemium'] },
+      { type: 'allHaveScores' },
+      { type: 'scoresInRange' },
       { type: 'finalScoreDescending' },
     ],
   },
@@ -76,7 +70,7 @@ export const rankingFixtures: RankingFixture[] = [
     ],
   },
   {
-    label: 'featured tools surface in top results',
+    label: 'featured tools surface in top results for browse query',
     query: 'productivity',
     assertions: [
       { type: 'minResults', count: 5 },
@@ -85,7 +79,138 @@ export const rankingFixtures: RankingFixture[] = [
     ],
   },
   {
-    label: 'pagination: page 2 does not overlap page 1',
+    label: 'results have no empty names',
+    query: 'customer support',
+    assertions: [
+      { type: 'noEmptyNames' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+
+  // ── Filters ──────────────────────────────────────────────────
+
+  {
+    label: 'category filter restricts results correctly',
+    query: 'image generation',
+    filters: { category: 'Content & Creative' },
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'categoryFilter', expected: 'Content & Creative' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'free + freemium pricing filter returns only matching tools',
+    query: 'code completion',
+    filters: { pricing: ['Free', 'Freemium'] },
+    assertions: [
+      { type: 'pricingFilter', allowed: ['Free', 'Freemium'] },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'marketing category filter on sales query',
+    query: 'outbound sales prospecting',
+    filters: { category: 'Marketing & Sales' },
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'categoryFilter', expected: 'Marketing & Sales' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'data analytics category filter',
+    query: 'data visualization dashboard',
+    filters: { category: 'Data & Analytics' },
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'categoryFilter', expected: 'Data & Analytics' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+
+  // ── Intent-based queries ──────────────────────────────────────
+
+  {
+    label: 'intent query: email writing help',
+    query: 'help writing cold emails',
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'semanticSignal' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'intent query: automate repetitive work',
+    query: 'automate my repetitive workflow tasks',
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'semanticSignal' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'intent query: customer support at scale',
+    query: 'handle customer support tickets without hiring',
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'semanticSignal' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'intent query: build mobile app without code',
+    query: 'build a mobile app without coding',
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'semanticSignal' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'intent query: generate social media content',
+    query: 'create social media posts for my brand',
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'semanticSignal' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+
+  // ── Use-case queries ──────────────────────────────────────────
+
+  {
+    label: 'use-case query: B2B sales tools',
+    query: 'sales prospecting tools for B2B startup',
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'allHaveScores' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'use-case query: developer productivity',
+    query: 'AI tools for software developers',
+    assertions: [
+      { type: 'minResults', count: 2 },
+      { type: 'allHaveScores' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'use-case query: HR recruiting',
+    query: 'recruit and screen job applicants faster',
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'semanticSignal' },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+
+  // ── Pagination ───────────────────────────────────────────────
+
+  {
+    label: 'page 1 returns results',
     query: 'AI tool',
     page: 1,
     pageSize: 5,
@@ -95,11 +220,55 @@ export const rankingFixtures: RankingFixture[] = [
     ],
   },
   {
-    label: 'all score fields are numbers in [0, 1] range',
-    query: 'video editing',
+    label: 'small pageSize respected',
+    query: 'project management',
+    pageSize: 3,
     assertions: [
-      { type: 'allHaveScores' },
       { type: 'finalScoreDescending' },
+    ],
+  },
+
+  // ── Edge cases ───────────────────────────────────────────────
+
+  {
+    label: 'short single-word query returns results',
+    query: 'crm',
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'category + pricing combined filter',
+    query: 'marketing automation',
+    filters: { category: 'Marketing & Sales', pricing: ['Freemium', 'Free'] },
+    assertions: [
+      { type: 'categoryFilter', expected: 'Marketing & Sales' },
+      { type: 'pricingFilter', allowed: ['Freemium', 'Free'] },
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'query with special characters does not crash',
+    query: 'AI & automation (free)',
+    assertions: [
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'very long query is handled gracefully',
+    query: 'I need an AI tool that helps my marketing team create content schedule publish and track performance of social media posts across instagram twitter and linkedin',
+    assertions: [
+      { type: 'finalScoreDescending' },
+    ],
+  },
+  {
+    label: 'development category query returns dev tools',
+    query: 'code review and debugging',
+    filters: { category: 'Development & Engineering' },
+    assertions: [
+      { type: 'minResults', count: 1 },
+      { type: 'categoryFilter', expected: 'Development & Engineering' },
     ],
   },
 ];
@@ -121,7 +290,7 @@ export function assertRankingContract(
 function check(
   assertion: FixtureAssertion,
   tools: Tool[],
-  fixture: RankingFixture
+  _fixture: RankingFixture
 ): AssertionResult {
   switch (assertion.type) {
     case 'minResults':
@@ -154,6 +323,26 @@ function check(
         message: outOfOrder === -1
           ? 'Results are in descending final_score order'
           : `Score order broken at index ${outOfOrder}: ${scores[outOfOrder - 1]} → ${scores[outOfOrder]}`,
+      };
+    }
+
+    case 'scoresInRange': {
+      const fields: (keyof SearchScores)[] = ['lexical', 'semantic', 'quality', 'freshness', 'behavior', 'final'];
+      const violations: string[] = [];
+      for (const t of tools) {
+        if (!t._scores) continue;
+        for (const f of fields) {
+          const v = t._scores[f];
+          if (typeof v !== 'number' || v < 0 || v > 1) {
+            violations.push(`${t.name}.${f}=${v}`);
+          }
+        }
+      }
+      return {
+        passed: violations.length === 0,
+        message: violations.length > 0
+          ? `Scores out of [0,1]: ${violations.join(', ')}`
+          : 'All scores in [0, 1]',
       };
     }
 
@@ -207,6 +396,17 @@ function check(
           : 'No semantic signal in results — embedding or RPC may be missing',
       };
     }
+
+    case 'noOverlapWithPage1': {
+      const page1Set = new Set(assertion.page1Ids);
+      const overlap = tools.filter(t => page1Set.has(String(t.id)));
+      return {
+        passed: overlap.length === 0,
+        message: overlap.length > 0
+          ? `Page overlap: ${overlap.map(t => t.name).join(', ')}`
+          : 'No overlap between pages',
+      };
+    }
   }
 }
 
@@ -220,9 +420,9 @@ if (require.main === module) {
 
     for (const fixture of rankingFixtures) {
       const result = await aiSearch(fixture.query, {
-        page: fixture.page ?? 1,
+        page:     fixture.page ?? 1,
         pageSize: fixture.pageSize ?? 20,
-        filters: fixture.filters,
+        filters:  fixture.filters,
       });
 
       const results = assertRankingContract(fixture, result.tools);
@@ -239,7 +439,8 @@ if (require.main === module) {
       }
     }
 
-    console.log(`\n${passed} passed, ${failed} failed`);
+    console.log(`\n─────────────────────`);
+    console.log(`${passed} passed, ${failed} failed`);
     process.exit(failed > 0 ? 1 : 0);
   })();
 }
