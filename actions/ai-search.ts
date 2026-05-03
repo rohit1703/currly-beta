@@ -30,9 +30,14 @@ export interface SearchFilters {
 export interface AISearchResult {
   tools: Tool[];
   intent: SearchIntent;
+  variant?: 'control' | 'treatment'; // present when ICP_AB_TEST_ENABLED=true
 }
 
 const EMPTY_INTENT: SearchIntent = { terms: [], category: null, pricing: null, summary: '' };
+
+// Position (0-indexed) reserved for a base-ranking "discovery" tool,
+// keeping one slot unaffected by ICP boosting to preserve serendipitous results.
+const EXPLORATION_SLOT = 4; // 5th result in 1-indexed display
 
 // Parse query intent with gpt-4o-mini — cached 24h (same query = same meaning)
 const parseIntent = unstable_cache(
@@ -219,6 +224,39 @@ function mapRankedRows(rows: Record<string, unknown>[]): Tool[] {
   });
 }
 
+// Deterministic A/B variant assignment.
+// Same userId always maps to the same variant — no DB write needed.
+// djb2-style hash: fast, well-distributed for UUIDs.
+function getSearchVariant(userId: string): 'control' | 'treatment' {
+  let hash = 5381;
+  for (let i = 0; i < userId.length; i++) {
+    hash = ((hash << 5) + hash) ^ userId.charCodeAt(i);
+    hash |= 0; // keep as 32-bit integer
+  }
+  return Math.abs(hash) % 2 === 0 ? 'control' : 'treatment';
+}
+
+// Injects a "discovery" result at EXPLORATION_SLOT.
+// Takes the highest base-ranked tool not already in the top EXPLORATION_SLOT positions
+// and pins it there, displacing whatever the boost had placed at that slot.
+// This ensures at least one result per page is unaffected by ICP boosting.
+function injectExplorationSlot(boosted: Tool[], preBoostOrder: Tool[]): Tool[] {
+  if (boosted.length <= EXPLORATION_SLOT) return boosted;
+
+  const pinnedIds = new Set(boosted.slice(0, EXPLORATION_SLOT).map(t => String(t.id)));
+  const candidate = preBoostOrder.find(t => !pinnedIds.has(String(t.id)));
+  if (!candidate) return boosted;
+
+  const candidateIdx = boosted.findIndex(t => String(t.id) === String(candidate.id));
+  // If candidate is already at or above the slot, nothing to do
+  if (candidateIdx <= EXPLORATION_SLOT) return boosted;
+
+  // Remove from current position, insert at exploration slot
+  const result = boosted.filter(t => String(t.id) !== String(candidate.id));
+  result.splice(EXPLORATION_SLOT, 0, candidate);
+  return result;
+}
+
 export async function aiSearch(
   query: string,
   options: { page?: number; pageSize?: number; filters?: SearchFilters } = {}
@@ -247,7 +285,7 @@ const getSessionProfile = cache(async (): Promise<UserProfile | null> => {
     if (!user) return null;
     const { data } = await createAdminClient()
       .from('user_profiles')
-      .select('onboarding_status, role, primary_use_case, monthly_budget_range')
+      .select('id, user_id, onboarding_status, role, primary_use_case, monthly_budget_range, company_stage, team_size, region, created_at, updated_at')
       .eq('user_id', user.id)
       .maybeSingle();
     return (data as UserProfile | null);
@@ -258,9 +296,16 @@ const getSessionProfile = cache(async (): Promise<UserProfile | null> => {
 
 /**
  * Hybrid search with ICP-aware re-ranking for authenticated users.
- * Fetches 3× the requested page size from the ranked RPC so the boost
- * has enough candidates to promote relevant tools without pagination gaps.
- * Falls back to plain ranked results for unauthenticated or unfinished profiles.
+ *
+ * Feature flags (all default to existing/safe behavior when unset):
+ *   ICP_RERANK_V1_ENABLED  — set to 'false' to kill-switch all ICP boosting (default: on)
+ *   ICP_AB_TEST_ENABLED    — set to 'true' to route 50% of users to control (no ICP)
+ *   ENABLE_OUTCOME_RANKING — set to 'true' to apply outcome signal boost after ICP
+ *
+ * Debug (non-production only):
+ *   NODE_ENV !== 'production'  — attaches _debug_icp to each boosted tool
+ *
+ * Returns variant ('control'|'treatment') when A/B test is active, undefined otherwise.
  */
 export async function personalizedSearch(
   query: string,
@@ -278,28 +323,58 @@ export async function personalizedSearch(
   const pageSize = options.pageSize ?? 20;
   const category = options.filters?.category ?? null;
   const pricing  = options.filters?.pricing  ?? null;
+  const debugMode = process.env.NODE_ENV !== 'production';
 
   const profile = await getSessionProfile();
 
-  // Without a completed profile there's nothing to boost — use the plain cached path
-  if (!profile || profile.onboarding_status !== 'completed') {
-    return runRankedSearch(query, category, pricing, page, pageSize);
+  // A/B test: deterministic 50/50 split by user_id hash.
+  // Only active when ICP_AB_TEST_ENABLED=true; variant is undefined otherwise.
+  let variant: 'control' | 'treatment' | undefined;
+  if (process.env.ICP_AB_TEST_ENABLED === 'true' && profile?.user_id) {
+    variant = getSearchVariant(profile.user_id);
   }
 
-  // Fetch a wider candidate window so boosted tools from lower positions can surface
+  // Kill-switch: ICP_RERANK_V1_ENABLED=false disables all ICP boosting immediately.
+  // Default: on (preserves existing production behavior).
+  const icpKilled = process.env.ICP_RERANK_V1_ENABLED === 'false';
+
+  // Decide whether to apply ICP path for this request:
+  // — profile must exist and be completed
+  // — kill-switch must be off
+  // — if A/B test is active, only treatment arm gets ICP
+  const useICP = !icpKilled
+    && !!profile
+    && profile.onboarding_status === 'completed'
+    && (variant === undefined || variant === 'treatment');
+
+  if (!useICP) {
+    const result = await runRankedSearch(query, category, pricing, page, pageSize);
+    return { ...result, variant };
+  }
+
+  // Fetch 3× candidate window so boost has room to promote lower-ranked tools
   const candidateSize = pageSize * 3;
   const { tools: candidates, intent } = await runRankedSearch(
     query, category, pricing, 1, candidateSize
   );
 
-  let reranked = applyICPBoost(candidates, profile);
+  // Preserve pre-boost ordering for exploration slot injection
+  const preBoostOrder = [...candidates].sort(
+    (a, b) => (b._scores?.final ?? 0) - (a._scores?.final ?? 0)
+  );
 
-  // Outcome signal boost — only when ENABLE_OUTCOME_RANKING=true and mat view has data
+  // ICP boost: multipliers capped at MAX_ICP_MULTIPLIER; debug fields attached in non-prod
+  let reranked = applyICPBoost(candidates, profile, debugMode);
+
+  // Outcome signal boost — only when enabled and mat view has data
   if (process.env.ENABLE_OUTCOME_RANKING === 'true') {
     const outcomeSignals = await getOutcomeSignals();
     reranked = applyOutcomeBoost(reranked, outcomeSignals);
   }
 
+  // Inject exploration slot: pin one base-ranked tool to preserve discovery quality
+  reranked = injectExplorationSlot(reranked, preBoostOrder);
+
   const start = (page - 1) * pageSize;
-  return { tools: reranked.slice(start, start + pageSize), intent };
+  return { tools: reranked.slice(start, start + pageSize), intent, variant };
 }

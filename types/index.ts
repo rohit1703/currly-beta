@@ -7,6 +7,13 @@ export interface SearchScores {
   final: number;
 }
 
+export interface ICPBoostDebug {
+  pre_boost_final: number;
+  multiplier: number;      // clamped value actually applied
+  raw_multiplier: number;  // value before ceiling
+  reasons: string[];       // e.g. ['use_case', 'pricing']
+}
+
 export interface Tool {
   id: string | number;
   notion_id?: string;
@@ -27,6 +34,7 @@ export interface Tool {
   website_url?: string;
   logo_url?: string;
   _scores?: SearchScores;
+  _debug_icp?: ICPBoostDebug; // only populated in non-production when DEBUG_SEARCH=true
 }
 
 export interface Category {
